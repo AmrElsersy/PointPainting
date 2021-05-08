@@ -104,12 +104,14 @@ def main():
     
     for i in range(len(dataset)):
         image, semantic = dataset[i]
+        if args.dataset == 'cityscapes':
+            image = np.asarray(image)
+            semantic = np.asarray(semantic)
         print(image.shape, semantic.shape)
 
-        if args.dataset == 'cityscapes':
-            new_shape = (1280,720)
-            image = cv2.resize(image, new_shape)
-            semantic = cv2.resize(semantic, new_shape)
+        new_shape = (1024,512)
+        image = cv2.resize(image, new_shape)
+        semantic = cv2.resize(semantic, new_shape)
 
         cv2.imshow('image', image)
         cv2.imshow('semantic', semantic)
