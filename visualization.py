@@ -89,20 +89,16 @@ class KittiVisualizer:
         self.pressed_btn = cv2.waitKey(0) & 0xff
         
 def main():
-    dataset = KittiSemanticDataset(mode = 'semantic')
+    dataset = KittiSemanticDataset(mode = 'color')
     visualizer = KittiVisualizer()
     for i in range(len(dataset)):
         image, semantic = dataset[i]
-        visualizer.visualize(image, semantic, semantic)
-        if visualizer.pressed_btn == 27:
+            
+        new_img = visualizer.add_semantic_to_image(image, semantic)
+        cv2.imshow('image', new_img)
+        if cv2.waitKey(0) == 27:
             cv2.destroyAllWindows()
             break
-            
-        # new_img = visualizer.add_semantic_to_image(image, semantic)
-        # cv2.imshow('image', new_img)
-        # if cv2.waitKey(0) == 27:
-        #     cv2.destroyAllWindows()
-        #     break
 
 if __name__ == '__main__':    
     main()
