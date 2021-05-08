@@ -24,8 +24,18 @@ class KittiVisualizer:
     def add_semantic_to_image(self, image, semantic):
         return cv2.addWeighted(image, 1, semantic, .6, 0)
 
+
+    """
+        Visualize image & predicted semantic label_ids & label semantic label_ids
+        Args:
+            image: input image of shape (342, 1247)
+            semantic: output model semantic map of shape () 
+    """
     def visualize(self, image, semantic, label):
-        # all will have the same width, just map the height to the same ratio to have the same image
+
+        # semantic = self.semantic_to_color(semantic)
+        # label = self.semantic_to_color(label)
+
         scene_width = self.scene_width        
         image_h, image_w = image.shape[:2]
         semantic_h, semantic_w = semantic.shape[:2]
@@ -46,6 +56,8 @@ class KittiVisualizer:
         total_image[new_image_height:new_image_height + new_label_height, :, :] = semantic
         total_image[new_image_height + new_label_height:, :, :] = label
 
+        cv2.namedWindow('total_image')
+        cv2.setMouseCallback('total_image',lambda event,x,y,flags,param : print(total_image[y,x]))
         cv2.imshow("total_image", total_image)
         self.__show_2D()
     
@@ -53,7 +65,7 @@ class KittiVisualizer:
         image = self.add_semantic_to_image(image, semantic)
         bev = pointcloud_to_bev(pointcloud)
 
-    def semantic_ids_to_color(self, semantic):    
+    def semantic_to_color(self, semantic):    
         colors = [[0, 255, 0],[0, 0, 255],[255, 0, 0],[0, 255, 255],[255, 255, 0],[255, 0, 255],[80, 70, 180],[250, 80, 190],[245, 145, 50],[70, 150, 250],[50, 190, 190]]
         colors = [[255,0,0]]
         r = np.zeros_like(semantic).astype(np.uint8)
@@ -72,7 +84,10 @@ def main():
     for i in range(len(dataset)):
         image, semantic = dataset[i]
         visualizer.visualize(image, semantic, semantic)
-
+        if visualizer.pressed_btn == 27:
+            cv2.destroyAllWindows()
+            break
+            
         # new_img = visualizer.add_semantic_to_image(image, semantic)
         # cv2.imshow('image', new_img)
         # if cv2.waitKey(0) == 27:
