@@ -14,7 +14,6 @@ import torchvision.transforms.transforms as transforms
 import torchvision
 import numpy as np 
 import cv2
-from utils import read_image
 
 class KittiSemanticDataset(Dataset):
     def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None):
