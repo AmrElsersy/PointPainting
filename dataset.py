@@ -17,7 +17,7 @@ import cv2
 from utils import read_image
 
 class KittiSemanticDataset(Dataset):
-    def __init__(self, root, split = 'train', mode = 'semantic', transform = None):
+    def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None):
         self.transform = transform
 
         assert split in ['train', 'test']
@@ -55,6 +55,9 @@ class KittiSemanticDataset(Dataset):
             semantic = self.read_image(semantic_path)
         elif self.mode == 'color':
             semantic = self.read_image(color_path)
+
+        image = np.asarray(image)
+        semantic = np.asarray(semantic)
 
         return image, semantic
 
@@ -102,9 +105,6 @@ def main():
     
     for i in range(len(dataset)):
         image, semantic = dataset[i]
-
-        image = np.asarray(image)
-        semantic = np.asarray(semantic)
         print(image.shape, semantic.shape)
 
         if args.dataset == 'cityscapes':

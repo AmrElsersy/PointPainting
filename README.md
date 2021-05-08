@@ -34,5 +34,5 @@ https://medium.com/swlh/image-segmentation-using-deep-learning-a-survey-e37e0f0a
 https://prince-canuma.medium.com/spatial-path-context-path-3f03ed0c0cf5
 https://medium.datadriveninvestor.com/bisenet-for-real-time-segmentation-part-i-bf8c04afc448
 
-Receptive field
+- Receptive field
 https://blog.christianperone.com/2017/11/the-effective-receptive-field-on-cnns/	
