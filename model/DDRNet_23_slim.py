@@ -341,10 +341,10 @@ class DualResNet(nn.Module):
         else:
             return x_      
 
-def DDRNet_23_slim(pretrained=False):
+def DDRNet_23_slim(pretrained=False, path =  '../checkpoints/weights/DDRNet_23_slim.pth'):
     model = DualResNet(BasicBlock, [2, 2, 2, 2], num_classes=19, planes=32, spp_planes=128, head_planes=64, augment=False)
     if pretrained:
-        checkpoint = torch.load('../checkpoints/weights/' + "DDRNet_23_slim.pth", map_location='cpu') 
+        checkpoint = torch.load(path, map_location='cpu') 
         '''      
         new_state_dict = OrderedDict()
         for k, v in checkpoint['state_dict'].items():
@@ -368,13 +368,13 @@ def get_seg_model(cfg, **kwargs):
     return model
 
 if __name__ == '__main__':
-    image = torch.rand(1, 3, 1024, 512)
+    image = torch.rand(1, 3, 512, 1024)
     size = image.size()[-2:]
 
     net = DDRNet_23_slim(pretrained=True)
     net.eval()
 
     pred = net(image)
-
+    print(pred.shape)
     pred = F.interpolate(input=pred, size=size, mode='bilinear', align_corners=True)
     print(pred.shape)
