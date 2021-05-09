@@ -38,16 +38,17 @@ colors  = np.array([[0, 0, 0],
                     [128, 0, 128 ],
                     [128, 128, 0 ],
                     [128, 128, 128 ],
+                    [192, 192, 192 ],
+                    [192, 192, 192 ],
                     [192, 192, 192 ]], dtype=np.uint8)
 
-def colorEncode(labelmap, mode='RGB'):
+def colorEncode(labelmap, mode='BGR'):
     global colors
     labelmap = labelmap.astype('int')
     labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
                             dtype=np.uint8)
-    # print(labelmap.shape)
+
     for label in np.unique(labelmap):
-        print(label.shape)
         if label < 0:
             continue
         labelmap_rgb += (labelmap == label)[:, :, np.newaxis] *  np.tile(colors[label],(labelmap.shape[0], labelmap.shape[1], 1))
@@ -58,8 +59,8 @@ def colorEncode(labelmap, mode='RGB'):
         return labelmap_rgb
 
 def test(args):
-    dataset = cityscapes_dataset()
-    # dataset = KittiSemanticDataset()
+    # dataset = cityscapes_dataset()
+    dataset = KittiSemanticDataset()
     visualizer = KittiVisualizer()
     
     model = DDRNet_23_slim(pretrained=True, path = args.path)
@@ -80,6 +81,7 @@ def test(args):
         pred_semantic = model(image)
         
         pred_semantic = F.interpolate(input=pred_semantic, size=size, mode='bilinear', align_corners=True)
+
         # get image back
         image = image.squeeze().detach().numpy().transpose(1,2,0)
         
@@ -90,9 +92,16 @@ def test(args):
         #     cv2.imshow(names[i], pred)
         #     print(pred, end='\n')
 
-        pred_semantic_color = colorEncode(pred_semantic.squeeze().detach().numpy())
+        print(pred_semantic.shape)
+        pred_semantic = torch.argmax(pred_semantic, dim=1).squeeze(0).cpu().numpy()
+        print(pred_semantic)
+        # return
+        print(pred_semantic.shape)
+        pred_semantic_color = colorEncode(pred_semantic)
         cv2.imshow('pred', pred_semantic_color)
-        cv2.waitKey(0)
+        if cv2.waitKey(0) == 27:
+            cv2.destroyAllWindows()
+            break
 
 
         
