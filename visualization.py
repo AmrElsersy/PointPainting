@@ -25,7 +25,6 @@ class KittiVisualizer:
     def add_semantic_to_image(self, image, semantic):
         return cv2.addWeighted(image, 1, semantic, .6, 0)
 
-
     """
         Visualize image & predicted semantic label_ids & label semantic label_ids
         Args:
@@ -74,7 +73,6 @@ class KittiVisualizer:
         g = np.zeros((semantic.shape[:2])).astype(np.uint8)
         b = np.zeros((semantic.shape[:2])).astype(np.uint8)
 
-        # print(id2label)
         for id in id2label:
             if id <= 0:
                 continue
@@ -84,6 +82,22 @@ class KittiVisualizer:
 
         semantic = np.stack([b, g, r], axis=2)
         return semantic
+
+    def semantic_to_color_v2(self, semantic):
+        r = np.zeros((semantic.shape[:2])).astype(np.uint8)
+        g = np.zeros((semantic.shape[:2])).astype(np.uint8)
+        b = np.zeros((semantic.shape[:2])).astype(np.uint8)
+
+        for id, dim in enumerate(semantic):
+            if id <= 0:
+                continue
+            color = id2label[id].color
+            indices = (dim == id)[:,:,0]
+            r[indices], g[indices], b[indices] = color
+
+        semantic = np.stack([b, g, r], axis=2)
+        return semantic
+
 
     def __show_2D(self):
         self.pressed_btn = cv2.waitKey(0) & 0xff

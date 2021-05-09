@@ -104,7 +104,7 @@ def main():
     
     for i in range(len(dataset)):
         image, semantic = dataset[i]
-        print(image.size, semantic.size)
+        # print(image.size, semantic.size)
     
         if args.dataset == 'cityscapes':
             image = np.asarray(image)
