@@ -2,3 +2,4 @@ Cityscapes/
 KITTI/
 __pycache__/
 *.pth
+*.jpg
