@@ -14,57 +14,14 @@ import torch.nn.functional as F
 
 from dataset import KittiSemanticDataset, cityscapes_dataset
 from visualization import KittiVisualizer
-from model.DDRNet_23_slim import DDRNet_23_slim
 from utils.utils import preprocessing_ddrnet
-
-names = ("background", "floor", "bed", "cabinet,wardrobe,bookcase,shelf",
-        "person", "door", "table,desk,coffee", "chair,armchair,sofa,bench,swivel,stool",
-        "rug", "railing", "column", "refrigerator", "stairs,stairway,step", "escalator", "wall",
-        "dog", "plant")
-
-colors  = np.array([[0, 0, 0],
-                    [0, 0, 255],
-                    [0, 255, 0],
-                    [0, 255, 255],
-                    [255, 0, 0 ],
-                    [255, 0, 255 ], 
-                    [255, 255, 0 ],
-                    [255, 255, 255 ],
-                    [0, 0, 128 ],
-                    [0, 128, 0 ],
-                    [128, 0, 0 ],
-                    [0, 128, 128 ],
-                    [128, 0, 0 ],
-                    [128, 0, 128 ],
-                    [128, 128, 0 ],
-                    [128, 128, 128 ],
-                    [192, 192, 192 ],
-                    [192, 192, 192 ],
-                    [192, 192, 192 ]], dtype=np.uint8)
-
-def colorEncode(labelmap, mode='BGR'):
-    global colors
-    labelmap = labelmap.astype('int')
-    labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
-                            dtype=np.uint8)
-
-    for label in np.unique(labelmap):
-        if label < 0:
-            continue
-        labelmap_rgb += (labelmap == label)[:, :, np.newaxis] *  np.tile(colors[label],(labelmap.shape[0], labelmap.shape[1], 1))
-
-    if mode == 'BGR':
-        return labelmap_rgb[:, :, ::-1]
-    else:
-        return labelmap_rgb
 
 def test(args):
     # dataset = cityscapes_dataset()
     dataset = KittiSemanticDataset()
     visualizer = KittiVisualizer()
     
-    model = DDRNet_23_slim(pretrained=True, path = args.path)
-    model.eval()
+    # model.eval()
 
     for i in range(len(dataset)):
         image, semantic = dataset[i]
