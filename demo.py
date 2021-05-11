@@ -15,11 +15,11 @@ torch.set_grad_enabled(False)
 np.random.seed(123)
 
 # args
-parse = argparse.ArgumentParser()
-parse.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
-parse.add_argument('--path', dest='img_path', type=str, 
+parser = argparse.ArgumentParser()
+parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
+parser.add_argument('--path', dest='img_path', type=str, 
 default='data/Cityscapes/leftImg8bit/test/berlin/berlin_000001_000019_leftImg8bit.png',)
-args = parse.parse_args()
+args = parser.parse_args()
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)

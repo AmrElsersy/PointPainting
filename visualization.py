@@ -23,7 +23,9 @@ class KittiVisualizer:
         self.scene_width = 1000
 
     def add_semantic_to_image(self, image, semantic):
-        return cv2.addWeighted(image, 1, semantic, .6, 0)
+        return cv2.addWeighted(image.astype(np.uint8), 1, 
+                               semantic.astype(np.uint8), .5, 
+                               0, cv2.CV_32F)
 
     """
         Visualize image & predicted semantic label_ids & label semantic label_ids

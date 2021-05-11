@@ -15,21 +15,36 @@ import torchvision
 import numpy as np 
 import cv2
 
+dev = "cuda" if torch.cuda.is_available() else "cpu"
+device = torch.device(dev)
 
 def read_image(path):
     return cv2.imread(path, cv2.IMREAD_COLOR)
 
 
-def preprocessing_ddrnet(image):
-    # to numpy
+def preprocessing_kitti(image):
     if type(image) != np.array:
         image = np.asarray(image)
-    # resize
     new_shape = (1024,512)
     image = cv2.resize(image, new_shape)
-    # to tensor
     image = transforms.ToTensor()(image)
+    # image = torch.from_numpy(image.copy().transpose(2,0,1)).unsqueeze(0).to(device) / 255
+
+    image = image.unsqueeze(0).to(device)
     return image
+
+def preprocessing_cityscapes(image):
+    mean=(0.3257, 0.3690, 0.3223)
+    std=(0.2112, 0.2148, 0.2115)
+
+    image = transforms.ToTensor()(image)
+    dtype, device = image.dtype, image.device
+    mean = torch.as_tensor(mean, dtype=dtype, device=device)[:, None, None]
+    std = torch.as_tensor(std, dtype=dtype, device=device)[:, None, None]
+    image = image.sub_(mean).div_(std).clone()
+    image = image.unsqueeze(0).to(device)
+    return image
+
 
 
 colors  = np.array([[0, 0, 0],
@@ -68,22 +83,3 @@ def colorEncode(labelmap, mode='BGR'):
     else:
         return labelmap_rgb
 
-class ToTensor(object):
-    '''
-    mean and std should be of the channel order 'bgr'
-    '''
-    def __init__(self, mean=(0, 0, 0), std=(1., 1., 1.)):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, im_lb):
-        im, lb = im_lb['im'], im_lb['lb']
-        im = im.transpose(2, 0, 1).astype(np.float32)
-        im = torch.from_numpy(im).div_(255)
-        dtype, device = im.dtype, im.device
-        mean = torch.as_tensor(self.mean, dtype=dtype, device=device)[:, None, None]
-        std = torch.as_tensor(self.std, dtype=dtype, device=device)[:, None, None]
-        im = im.sub_(mean).div_(std).clone()
-        if not lb is None:
-            lb = torch.from_numpy(lb.astype(np.int64).copy()).clone()
-        return dict(im=im, lb=lb)

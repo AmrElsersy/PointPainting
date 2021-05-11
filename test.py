@@ -14,56 +14,81 @@ import torch.nn.functional as F
 
 from dataset import KittiSemanticDataset, cityscapes_dataset
 from visualization import KittiVisualizer
-from utils.utils import preprocessing_ddrnet
+from utils.utils import preprocessing_cityscapes, preprocessing_kitti, colorEncode
+
+from model.BiseNetv2 import BiSeNetV2
+from config import cfg
+
+dev = "cuda" if torch.cuda.is_available() else "cpu"
+device = torch.device(dev)
+
+# for colors generation
+np.random.seed(123)
 
 def test(args):
-    # dataset = cityscapes_dataset()
-    dataset = KittiSemanticDataset()
+    if args.dataset == 'kitti':
+        dataset = KittiSemanticDataset()
+    else:
+        dataset = cityscapes_dataset()
+
     visualizer = KittiVisualizer()
     
-    # model.eval()
+    # define model
+    model = BiSeNetV2(19)
+    checkpoint = torch.load(args.weight_path, map_location=dev)
+    model.load_state_dict(checkpoint, strict=False)
+    model.eval()
+    model.to(device)
 
     for i in range(len(dataset)):
         image, semantic = dataset[i]
-        # print(image.size, semantic.size)
+        original = np.asarray(image.copy())
+
         # (1, 3, 512, 1024) required
+        if args.dataset == 'kitti':
+            image = preprocessing_kitti(image)
+        else:
+            image = preprocessing_cityscapes(image)
 
-        image = preprocessing_ddrnet(image)
-        semantic = preprocessing_ddrnet(semantic)
-        # print(image.size(), semantic.size())
-        image = torch.unsqueeze(image, 0)
-        size = image.size()[-2:]
+        print(image.shape)
+        pred = model(image)
+        pred = pred.argmax(dim=1).squeeze().detach().cpu().numpy()
+        print(pred.shape)        
 
-        # print(image)
-        pred_semantic = model(image)
-        
-        pred_semantic = F.interpolate(input=pred_semantic, size=size, mode='bilinear', align_corners=True)
+        # coloring
+        palette = np.random.randint(0, 256, (256, 3), dtype=np.uint8)
+        pred = palette[pred]
+        print(pred.shape)
 
-        # get image back
+        # get numpy image back
         image = image.squeeze().detach().numpy().transpose(1,2,0)
-        
-        cv2.imshow('image', image)
+
+        # save
+        new_shape = (1024, 512)
+        image = cv2.resize(image, new_shape)
+        pred = cv2.resize(pred, new_shape)
+        original = cv2.resize(original, new_shape)
+        total = visualizer.add_semantic_to_image(original, pred)
+
+        cv2.imshow('image',image)
+        cv2.imshow('pred', pred)
+        cv2.imshow('total', total)
+        if cv2.waitKey(0) == 27:
+            cv2.destroyAllWindows()
+            break
+        cv2.imwrite('./res.jpg', pred)
+
         # names = ['road', 'pedestrian', 'car']
         # for i, id in enumerate([2, 18, 10]):
         #     pred = pred_semantic[0][id].detach().numpy().astype(np.uint8)
         #     cv2.imshow(names[i], pred)
         #     print(pred, end='\n')
 
-        print(pred_semantic.shape)
-        pred_semantic = torch.argmax(pred_semantic, dim=1).squeeze(0).cpu().numpy()
-        print(pred_semantic)
-        # return
-        print(pred_semantic.shape)
-        pred_semantic_color = colorEncode(pred_semantic)
-        cv2.imshow('pred', pred_semantic_color)
-        if cv2.waitKey(0) == 27:
-            cv2.destroyAllWindows()
-            break
 
 
-        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default='checkpoints/weights/DDRNet_23_slim.pth')
+    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
+    parser.add_argument('--dataset', choices=['cityscapes', 'kitti'], default='kitti')
     args = parser.parse_args()
     test(args)
