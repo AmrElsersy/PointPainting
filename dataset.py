@@ -9,7 +9,7 @@ import os, time, enum
 from PIL import Image
 import argparse
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
 import torchvision.transforms.transforms as transforms
 import torchvision
 import numpy as np 
@@ -69,6 +69,27 @@ class KittiSemanticDataset(Dataset):
     def read_image(self, path):
         return cv2.imread(path, cv2.IMREAD_COLOR)
 
+
+def create_train_dataloader(root = 'data/KITTI', batch_size = 4):
+    dataset = KittiSemanticDataset(root = root, split='train')
+    indices = list(range(0, 180))
+    train_subset = Subset(dataset, indices)
+    dataloader = DataLoader(train_subset, batch_size, shuffle=True)
+    return dataloader
+
+def create_val_dataloader(root = 'data/KITTI', batch_size = 1):
+    transform = transforms.ToTensor()
+    dataset = KittiSemanticDataset(root = root, split='train', transform=transform)
+    indices = list(range(180, len(dataset)))
+    val_subset = Subset(dataset, indices)
+    dataloader = DataLoader(val_subset, batch_size, shuffle=False)
+    return dataloader
+
+def create_test_dataloader(root = 'data/KITTI', batch_size = 1):
+    transform = transforms.ToTensor()
+    dataset = KittiSemanticDataset(root = root, split='test', transform=transform)
+    dataloader = DataLoader(dataset, batch_size, shuffle=False)
+    return dataloader
 
 def cityscapes_dataset(split = 'test', path = 'data/Cityscapes', mode ='semantic'):
     # types: 'color', 'semantic'
