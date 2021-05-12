@@ -21,9 +21,11 @@ from utils.label import Label, name2label, id2label
 class KittiVisualizer:
     def __init__(self):
         self.scene_width = 1000
+        self.scene_height = 600 # for horizontal visualization
 
     def add_semantic_to_image(self, image, semantic):
-        return cv2.addWeighted(image.astype(np.uint8), 1, 
+        return cv2.addWeighted(cv2.resize(image, (semantic.shape[1], semantic.shape[0]) )
+                               .astype(np.uint8), 1, 
                                semantic.astype(np.uint8), .5, 
                                0, cv2.CV_32F)
 
@@ -33,10 +35,34 @@ class KittiVisualizer:
             image: input image of shape (342, 1247)
             semantic: output model semantic map of shape () 
     """
+    def visualize_test(self, image, semantic, label):
+        self.scene_width = 680
+        self.__visualize(image, semantic, label)
+                
     def visualize(self, image, semantic, label):
-
         semantic = self.semantic_to_color(semantic)
         label = self.semantic_to_color(label)
+        self.__visualize(image, semantic, label)
+
+    def visualize_horizontal(self, image, semantic):
+        scene_height = self.scene_height        
+        image_h, image_w = image.shape[:2]
+        semantic_h, semantic_w = semantic.shape[:2]
+
+        new_image_width = int(image_h * scene_height / image_h)
+        new_semantic_width = int(semantic_h * scene_height / semantic_h)
+
+        image = cv2.resize(image, (scene_height, new_image_width))
+        semantic = cv2.resize(semantic, (scene_height, new_semantic_width)) 
+
+        total_image = np.zeros((scene_height, new_image_width + new_semantic_width, 3), dtype=np.uint8)
+
+        total_image[:, :new_image_width, :] = image
+        total_image[:, new_image_width:, :] = semantic
+
+        self.__show(total_image)
+
+    def __visualize(self, image, semantic, label):    
 
         scene_width = self.scene_width        
         image_h, image_w = image.shape[:2]
@@ -58,13 +84,19 @@ class KittiVisualizer:
         total_image[new_image_height:new_image_height + new_label_height, :, :] = semantic
         total_image[new_image_height + new_label_height:, :, :] = label
 
+        self.__show(total_image)
+
+    def __show(self, image):
         cv2.namedWindow('total_image')
-        def print_img(event,x,y,flags,param):
-            if event == cv2.EVENT_LBUTTONDOWN:
-                print(total_image[y,x])
-        cv2.setMouseCallback('total_image', print_img)
-        cv2.imshow("total_image", total_image)
+        # def print_img(event,x,y,flags,param):
+        #     if event == cv2.EVENT_LBUTTONDOWN:
+        #         id = image[y,x]
+        #         print(id)
+        #         print(id, id2label[id].name)
+        # cv2.setMouseCallback('total_image', print_img)
+        cv2.imshow("total_image", image)
         self.__show_2D()
+
     
     def visualize_semantic_bev(self, image, semantic, pointcloud):
         image = self.add_semantic_to_image(image, semantic)
@@ -75,31 +107,21 @@ class KittiVisualizer:
         g = np.zeros((semantic.shape[:2])).astype(np.uint8)
         b = np.zeros((semantic.shape[:2])).astype(np.uint8)
 
-        for id in id2label:
-            if id <= 0:
+        for key in id2label:
+            label = id2label[key]   
+
+            if key == 0 or key == -1:
                 continue
-            color = id2label[id].color
-            indices = (semantic == id)[:,:,0]
+            if label.trainId == 255:
+                continue
+            
+            id = label.trainId
+            color = label.color
+            indices = semantic == id
             r[indices], g[indices], b[indices] = color
 
         semantic = np.stack([b, g, r], axis=2)
         return semantic
-
-    def semantic_to_color_v2(self, semantic):
-        r = np.zeros((semantic.shape[:2])).astype(np.uint8)
-        g = np.zeros((semantic.shape[:2])).astype(np.uint8)
-        b = np.zeros((semantic.shape[:2])).astype(np.uint8)
-
-        for id, dim in enumerate(semantic):
-            if id <= 0:
-                continue
-            color = id2label[id].color
-            indices = (dim == id)[:,:,0]
-            r[indices], g[indices], b[indices] = color
-
-        semantic = np.stack([b, g, r], axis=2)
-        return semantic
-
 
     def __show_2D(self):
         self.pressed_btn = cv2.waitKey(0) & 0xff

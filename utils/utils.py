@@ -45,41 +45,9 @@ def preprocessing_cityscapes(image):
     image = image.unsqueeze(0).to(device)
     return image
 
+def postprocessing(pred):
+    pred = pred.argmax(dim=1).squeeze().detach().cpu().numpy()
+    return pred
 
-
-colors  = np.array([[0, 0, 0],
-                    [0, 0, 255],
-                    [0, 255, 0],
-                    [0, 255, 255],
-                    [255, 0, 0 ],
-                    [255, 0, 255 ], 
-                    [255, 255, 0 ],
-                    [255, 255, 255 ],
-                    [0, 0, 128 ],
-                    [0, 128, 0 ],
-                    [128, 0, 0 ],
-                    [0, 128, 128 ],
-                    [128, 0, 0 ],
-                    [128, 0, 128 ],
-                    [128, 128, 0 ],
-                    [128, 128, 128 ],
-                    [192, 192, 192 ],
-                    [192, 192, 192 ],
-                    [192, 192, 192 ]], dtype=np.uint8)
-
-def colorEncode(labelmap, mode='BGR'):
-    global colors
-    labelmap = labelmap.astype('int')
-    labelmap_rgb = np.zeros((labelmap.shape[0], labelmap.shape[1], 3),
-                            dtype=np.uint8)
-
-    for label in np.unique(labelmap):
-        if label < 0:
-            continue
-        labelmap_rgb += (labelmap == label)[:, :, np.newaxis] *  np.tile(colors[label],(labelmap.shape[0], labelmap.shape[1], 1))
-
-    if mode == 'BGR':
-        return labelmap_rgb[:, :, ::-1]
-    else:
-        return labelmap_rgb
-
+def tensor_to_cv2(image):
+    return image.squeeze(0).cpu().detach().numpy().transpose(1,2,0)
