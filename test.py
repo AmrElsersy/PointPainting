@@ -56,10 +56,6 @@ def test(args):
         image = image.squeeze().detach().numpy().transpose(1,2,0)
 
         # save
-        new_shape = (1024, 512)
-        image = cv2.resize(image, new_shape)
-        pred = cv2.resize(pred, new_shape)
-        original = cv2.resize(original, new_shape)
         pred_color = visualizer.add_semantic_to_image(original, pred)
 
         visualizer.visualize_test(original, pred, pred_color)
