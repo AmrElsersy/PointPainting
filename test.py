@@ -48,9 +48,7 @@ def test(args):
         pred = postprocessing(pred) # (1024, 2048) 
 
         # coloring
-        # pred = palette[pred]
-        pred = visualizer.semantic_to_color(pred)
-        print('after',pred.shape) # (1024, 2048, 3)
+        pred = visualizer.semantic_to_color(pred) # (1024, 2048, 3)
 
         # get numpy image back
         image = image.squeeze().detach().numpy().transpose(1,2,0)

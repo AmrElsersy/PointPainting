@@ -4,19 +4,16 @@ email: amrelsersay@gmail.com
 -----------------------------------------------------------------------------------
 Description: KITTI & Cityscapes Visualization
 """
-
-import os, time, enum
-from PIL import Image
 import argparse
+import enum
 import torch
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms.transforms as transforms
-import torchvision
+from torch.utils.data import  DataLoader
 import numpy as np 
 import cv2
-from utils.utils import read_image
 from dataset import KittiSemanticDataset
-from utils.label import Label, name2label, id2label
+from utils.label import id2label
+from utils.utils import tensor_to_cv2
+import torch.utils.tensorboard as tensorboard
 
 class KittiVisualizer:
     def __init__(self):
@@ -131,7 +128,7 @@ def main():
     visualizer = KittiVisualizer()
     for i in range(len(dataset)):
         image, semantic = dataset[i]
-            
+        print(image.shape)
         new_img = visualizer.add_semantic_to_image(image, semantic)
         cv2.imshow('image', new_img)
         if cv2.waitKey(0) == 27:
@@ -139,4 +136,37 @@ def main():
             break
 
 if __name__ == '__main__':    
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tensorboard', action='store_true', help='tensorboard visualization')
+    parser.add_argument('--logdir', type=str, default='checkpoints/tensorboard', help='tensorboard log directory')
+    parser.add_argument('--batch_size', type=int, default=50,help='num of images in each tensorboard batch vis')
+    parser.add_argument('--stop', type=int, default=4, help='number of batches to be visualized in tensorboard')
+    args = parser.parse_args()
+
+    if not args.tensorboard:
+        main()
+    else:
+        # Tensorboard
+        dataset = KittiSemanticDataset(mode = 'color')
+        visualizer = KittiVisualizer()
+        writer = tensorboard.SummaryWriter(args.logdir)
+        dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False)
+        
+        batch = 0
+        for images, semantics in dataloader:
+            batch += 1
+            images_colored = torch.zeros_like(images)
+            for i, image in enumerate(images):
+                semantic = semantics[i]
+                image = image.numpy()
+                semantic = semantic.numpy()
+                image_colored = visualizer.add_semantic_to_image(image, semantic)
+                image_colored = cv2.cvtColor(image_colored, cv2.COLOR_RGB2BGR)
+                images_colored[i] = torch.from_numpy(image_colored)
+
+            writer.add_images("images_colored", images_colored, global_step=batch, dataformats="NHWC")
+            print ("*" * 60, f'\n\n\t Saved {args.batch_size} images with Step {batch}. run tensorboard @ project root')
+            if batch == args.stop:
+                writer.close()
+                break
+

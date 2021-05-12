@@ -58,6 +58,9 @@ class KittiSemanticDataset(Dataset):
         image = np.asarray(image)
         semantic = np.asarray(semantic)
 
+        shape = (1242, 375)
+        image = cv2.resize(image, shape)
+        semantic = cv2.resize(semantic, shape)
         return image, semantic
 
     def __len__(self):
@@ -71,6 +74,9 @@ def create_train_dataloader():
     return
 
 def create_test_dataloader():
+    return
+
+def create_val_dataloader():
     return
 
 def cityscapes_dataset(split = 'train', path = 'data/Cityscapes', mode ='semantic'):
