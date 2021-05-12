@@ -25,10 +25,10 @@ def read_image(path):
 def preprocessing_kitti(image):
     if type(image) != np.array:
         image = np.asarray(image)
+
     new_shape = (1024,512)
     image = cv2.resize(image, new_shape)
     image = transforms.ToTensor()(image)
-    # image = torch.from_numpy(image.copy().transpose(2,0,1)).unsqueeze(0).to(device) / 255
 
     image = image.unsqueeze(0).to(device)
     return image
@@ -37,7 +37,8 @@ def preprocessing_cityscapes(image):
     mean=(0.3257, 0.3690, 0.3223)
     std=(0.2112, 0.2148, 0.2115)
 
-    image = transforms.ToTensor()(image)
+    if type(image) != torch.Tensor:
+        image = transforms.ToTensor()(image)
     dtype, device = image.dtype, image.device
     mean = torch.as_tensor(mean, dtype=dtype, device=device)[:, None, None]
     std = torch.as_tensor(std, dtype=dtype, device=device)[:, None, None]
@@ -51,3 +52,19 @@ def postprocessing(pred):
 
 def tensor_to_cv2(image):
     return image.squeeze(0).cpu().detach().numpy().transpose(1,2,0)
+
+
+def normalization_kitti_preprocessing(image):
+    mean=(0.3257, 0.3690, 0.3223)
+    std=(0.2112, 0.2148, 0.2115)
+
+    if type(image) != torch.Tensor:
+        image = transforms.ToTensor()(image)
+    dtype, device = image.dtype, image.device
+    mean = torch.as_tensor(mean, dtype=dtype, device=device)[:, None, None]
+    std = torch.as_tensor(std, dtype=dtype, device=device)[:, None, None]
+    image = image.sub_(mean).div_(std).clone()
+    image = image.unsqueeze(0).to(device)
+    return image
+
+
