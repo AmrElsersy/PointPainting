@@ -70,16 +70,7 @@ class KittiSemanticDataset(Dataset):
         return cv2.imread(path, cv2.IMREAD_COLOR)
 
 
-def create_train_dataloader():
-    return
-
-def create_test_dataloader():
-    return
-
-def create_val_dataloader():
-    return
-
-def cityscapes_dataset(split = 'train', path = 'data/Cityscapes', mode ='semantic'):
+def cityscapes_dataset(split = 'test', path = 'data/Cityscapes', mode ='semantic'):
     # types: 'color', 'semantic'
     dataset = torchvision.datasets.Cityscapes(path, split= split, mode='fine', target_type= mode)
     return dataset
