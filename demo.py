@@ -22,7 +22,8 @@ np.random.seed(123)
 parser = argparse.ArgumentParser()
 parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
 parser.add_argument('--path', dest='img_path', type=str, 
-default='data/Cityscapes/leftImg8bit/test/berlin/berlin_000001_000019_leftImg8bit.png',)
+# default='data/Cityscapes/leftImg8bit/test/berlin/berlin_000001_000019_leftImg8bit.png',)
+default='data/KITTI/testing/image_2/000000_10.png',)
 args = parser.parse_args()
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -52,6 +53,6 @@ pred = visualizer.semantic_to_color(pred)
 
 # visualize & save
 total = visualizer.add_semantic_to_image(original, pred)
-# visualizer.visualize_test(original, pred, total)
-visualizer.visualize_horizontal(original, pred)
+visualizer.visualize_test(original, pred, total)
+# visualizer.visualize_horizontal(original, pred)
 cv2.imwrite('./res.jpg', pred)
