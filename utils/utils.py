@@ -14,13 +14,14 @@ import torchvision.transforms.transforms as transforms
 import torchvision
 import numpy as np 
 import cv2
+import random
+import math
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
 
 def read_image(path):
     return cv2.imread(path, cv2.IMREAD_COLOR)
-
 
 def preprocessing_kitti(image):
     if type(image) != np.array:
@@ -53,15 +54,141 @@ def postprocessing(pred):
 def tensor_to_cv2(image):
     return image.squeeze(0).cpu().detach().numpy().transpose(1,2,0)
 
-def train_preprocessing(image):
-    mean=(0.3257, 0.3690, 0.3223)
-    std=(0.2112, 0.2148, 0.2115)
+# ========= Transforms ============
 
-    if type(image) != torch.Tensor:
-        image = transforms.ToTensor()(image)
-    dtype, device = image.dtype, image.device
-    mean = torch.as_tensor(mean, dtype=dtype, device=device)[:, None, None]
-    std = torch.as_tensor(std, dtype=dtype, device=device)[:, None, None]
-    image = image.sub_(mean).div_(std).clone()
-    image = image.unsqueeze(0).to(device)
-    return image
+class RandomResizedCrop(object):
+    '''
+    size should be a tuple of (H, W)
+    '''
+    def __init__(self, scales=(0.5, 1.), size=(384, 384)):
+        self.scales = scales
+        self.size = size
+
+    def __call__(self, im, lb):
+        if self.size is None:
+            return im, lb
+        assert im.shape[:2] == lb.shape[:2]
+
+        crop_h, crop_w = self.size
+        scale = np.random.uniform(min(self.scales), max(self.scales))
+        im_h, im_w = [math.ceil(el * scale) for el in im.shape[:2]]
+        im = cv2.resize(im, (im_w, im_h))
+        lb = cv2.resize(lb, (im_w, im_h), interpolation=cv2.INTER_NEAREST)
+
+        if (im_h, im_w) == (crop_h, crop_w): return dict(im=im, lb=lb)
+        pad_h, pad_w = 0, 0
+        if im_h < crop_h:
+            pad_h = (crop_h - im_h) // 2 + 1
+        if im_w < crop_w:
+            pad_w = (crop_w - im_w) // 2 + 1
+        if pad_h > 0 or pad_w > 0:
+            im = np.pad(im, ((pad_h, pad_h), (pad_w, pad_w), (0, 0)))
+            lb = np.pad(lb, ((pad_h, pad_h), (pad_w, pad_w)), 'constant', constant_values=255)
+
+        im_h, im_w, _ = im.shape
+        sh, sw = np.random.random(2)
+        sh, sw = int(sh * (im_h - crop_h)), int(sw * (im_w - crop_w))
+        return im[sh:sh+crop_h, sw:sw+crop_w, :].copy(), lb[sh:sh+crop_h, sw:sw+crop_w].copy()
+        
+
+class RandomHorizontalFlip(object):
+
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, im, lb):
+        if np.random.random() < self.p:
+            return im, lb
+        assert im.shape[:2] == lb.shape[:2]
+        return im[:, ::-1, :], lb[:, ::-1]
+
+class ColorJitter(object):
+
+    def __init__(self, brightness=None, contrast=None, saturation=None):
+        if not brightness is None and brightness >= 0:
+            self.brightness = [max(1-brightness, 0), 1+brightness]
+        if not contrast is None and contrast >= 0:
+            self.contrast = [max(1-contrast, 0), 1+contrast]
+        if not saturation is None and saturation >= 0:
+            self.saturation = [max(1-saturation, 0), 1+saturation]
+
+    def __call__(self, im, lb):
+        assert im.shape[:2] == lb.shape[:2]
+        if not self.brightness is None:
+            rate = np.random.uniform(*self.brightness)
+            im = self.adj_brightness(im, rate)
+        if not self.contrast is None:
+            rate = np.random.uniform(*self.contrast)
+            im = self.adj_contrast(im, rate)
+        if not self.saturation is None:
+            rate = np.random.uniform(*self.saturation)
+            im = self.adj_saturation(im, rate)
+        return im , lb
+
+    def adj_saturation(self, im, rate):
+        M = np.float32([
+            [1+2*rate, 1-rate, 1-rate],
+            [1-rate, 1+2*rate, 1-rate],
+            [1-rate, 1-rate, 1+2*rate]
+        ])
+        shape = im.shape
+        im = np.matmul(im.reshape(-1, 3), M).reshape(shape)/3
+        im = np.clip(im, 0, 255).astype(np.uint8)
+        return im
+
+    def adj_brightness(self, im, rate):
+        table = np.array([
+            i * rate for i in range(256)
+        ]).clip(0, 255).astype(np.uint8)
+        return table[im]
+
+    def adj_contrast(self, im, rate):
+        table = np.array([
+            74 + (i - 74) * rate for i in range(256)
+        ]).clip(0, 255).astype(np.uint8)
+        return table[im]
+
+class ToTensor(object):
+    '''
+    mean and std should be of the channel order 'bgr'
+    '''
+    def __init__(self, mean=(0, 0, 0), std=(1., 1., 1.)):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, im, lb):
+        im = im.transpose(2, 0, 1).astype(np.float32)
+        im = torch.from_numpy(im).div_(255)
+        dtype, device = im.dtype, im.device
+        mean = torch.as_tensor(self.mean, dtype=dtype, device=device)[:, None, None]
+        std = torch.as_tensor(self.std, dtype=dtype, device=device)[:, None, None]
+        im = im.sub_(mean).div_(std).clone()
+        if not lb is None:
+            lb = torch.from_numpy(lb.astype(np.int64).copy()).clone()
+        return im, lb
+
+class Compose(object):
+
+    def __init__(self, do_list):
+        self.do_list = do_list
+
+    def __call__(self, im, lb):
+        for comp in self.do_list:
+            im, lb = comp(im, lb)
+        return im, lb
+
+class TransformationTrain(object):
+    
+    def __init__(self, scales, cropsize):
+        self.trans_func = Compose([
+            RandomResizedCrop(scales, cropsize),
+            RandomHorizontalFlip(),
+            ColorJitter(
+                brightness=0.4,
+                contrast=0.4,
+                saturation=0.4
+            ),
+        ])
+    def __call__(self, im, lb):
+        im, lb = self.trans_func(im, lb)
+        return im, lb

@@ -14,6 +14,7 @@ import torchvision
 import numpy as np 
 import cv2
 from utils.label import labels, id2label
+from utils.utils import TransformationTrain
 
 class KittiSemanticDataset(Dataset):
     def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None):
@@ -65,7 +66,7 @@ class KittiSemanticDataset(Dataset):
         # print(semantic.shape)
         shape = (1024, 512)
         image = cv2.resize(image, shape)
-        semantic = cv2.resize(semantic, shape)
+        semantic = cv2.resize(semantic, shape, interpolation=cv2.INTER_NEAREST)
 
         if self.split == 'training':
             semantic = self.remove_ignore_index_labels(semantic)
@@ -90,6 +91,7 @@ class KittiSemanticDataset(Dataset):
 
 def create_train_dataloader(root = 'data/KITTI', batch_size = 4):
     transform = transforms.ToTensor()
+    # transform = TransformationTrain(scales=[0.25, 2.], cropsize=[512, 1024])
     dataset = KittiSemanticDataset(root = root, split='train', transform=transform)
     indices = list(range(0, 180))
     train_subset = Subset(dataset, indices)
