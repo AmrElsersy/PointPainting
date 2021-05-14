@@ -20,6 +20,7 @@ cudnn.benchmark = True
 cudnn.enabled = True
 
 from model.BiseNetv2 import BiSeNetV2
+from model.ohem_loss import OhemCELoss
 from dataset import create_train_dataloader, create_val_dataloader
 from utils.utils import *
 from visualization import KittiVisualizer
@@ -35,13 +36,15 @@ def parse_args():
     parser.add_argument('--datapath', type=str, default='data/KITTI', help='root path of dataset')
     parser.add_argument('--pretrained', type=str,default='checkpoints/weights_epoch_75.pth',help='load checkpoint')
     parser.add_argument('--resume', action='store_true', help='resume from pretrained path specified in prev arg')
-    parser.add_argument('--savepath', type=str, default='checkpoint/model_weights', help='save checkpoint path')    
+    parser.add_argument('--savepath', type=str, default='checkpoints/model_weights', help='save checkpoint path')    
     parser.add_argument('--savefreq', type=int, default=1, help="save weights each freq num of epochs")
-    parser.add_argument('--logdir', type=str, default='checkpoint/logging', help='logging')    
+    parser.add_argument('--logdir', type=str, default='checkpoints/logging', help='logging')    
     parser.add_argument("--lr_patience", default=40, type=int)
     args = parser.parse_args()
     return args
 # ======================================================================
+
+torch.cuda.empty_cache()
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
@@ -58,9 +61,12 @@ def main():
     val_dataloader = create_val_dataloader(root=args.datapath, batch_size=args.batch_size)
 
     start_epoch = 0
+
     # ======== models & loss ========== 
     model = BiSeNetV2(19)
-    loss = nn.CrossEntropyLoss()
+    loss = OhemCELoss(0.7)
+    loss_aux = [OhemCELoss(0.7) for _ in range(4)]
+
     # ========= load weights ===========
     if args.resume:
         checkpoint = torch.load(args.pretrained, map_location=device)
@@ -70,14 +76,15 @@ def main():
         time.sleep(1)
     else:
         print("******************* Start training from scratch *******************\n")
-        time.sleep(2)
+        # time.sleep(2)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=args.lr_patience, verbose=True)
+    
     # ========================================================================
     for epoch in range(start_epoch, args.epochs):
         # =========== train / validate ===========
-        train_loss = train_one_epoch(model, loss, optimizer, train_dataloader, epoch)
+        train_loss = train_one_epoch(model, loss, loss_aux, optimizer, train_dataloader, epoch)
         val_loss = validate(model, loss, val_dataloader, epoch)
         scheduler.step(val_loss)
         logging.info(f"\ttraining epoch={epoch} .. train_loss={train_loss}")
@@ -98,25 +105,32 @@ def main():
             time.sleep(2)
     writer.close()
 
-def train_one_epoch(model, criterion, optimizer, dataloader, epoch):
+def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoch):
     model.train()
     model.to(device)
     losses = []
 
     for images, labels in tqdm(dataloader):
+        print('train shapes=', images.shape, labels.shape)
+        images = images.to(device) # (batch, H, W, 3)
+        labels = labels.to(device) # (batch, H, W, 3) its 3 identical channels (each one is semantic map)
+        images = images.permute(0, 3, 1, 2) # (batch, 3, H, W)
+        labels = labels.permute(0, 3, 1, 2) # (batch, 3, H, W)
+        print('after=', images.shape, labels.shape)
+        print(images[0])
 
-        images = images.to(device) # (batch, 3, H, W)
-        labels = labels.to(device) # (batch, 3, H, W)
-        
-        images = normalization_kitti_preprocessing(images)
-        semantics = model(images) # (19, 1024, 2048)
-        semantics = postprocessing(semantics) # (1024, 2048) 
+
+        # images = train_preprocessing(images)
+        logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
+        # logits = logits.argmax(dim=1) # (bath, 1, 1024, 2048) 
 
         # # coloring
         # semantics = visualizer.semantic_to_color(semantics) # (1024, 2048, 3)
 
+        loss_main = criterion(logits, labels[:,0,:,:])
+        loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
+        loss = loss_main + sum(loss_aux)
 
-        loss = criterion(semantics, labels)
         losses.append(loss.cpu().item())
         print(f'training @ epoch {epoch} .. loss = {round(loss.item(),3)}')
 
@@ -138,24 +152,24 @@ def validate(model, criterion, dataloader, epoch):
 
     with torch.no_grad():
         for images, labels in tqdm(dataloader):
-        
+
             images = images.to(device) # (batch, 3, H, W)
-            labels = labels.to(device) # (batch, 3, H, W)
-            
-            images = normalization_kitti_preprocessing(images)
-            semantics = model(images) # (19, 1024, 2048)
-            semantics = postprocessing(semantics) # (1024, 2048) 
+            labels = labels.to(device) # (batch, 3, H, W) its 3 identical channels (each one is semantic map)
+            # images = train_preprocessing(images)
+            logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
+            logits = logits.argmax(dim=1) # (bath, 1, 1024, 2048) 
 
-            # # coloring
-            # semantics = visualizer.semantic_to_color(semantics) # (1024, 2048, 3)
+            loss_main = criterion(logits, labels[:,0,:,:])
+            loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
+            loss = loss_main + sum(loss_aux)
 
-            loss = criterion(semantics, labels)
             losses.append(loss.cpu().item())
 
-        val_loss = np.mean(losses).item()
-        val_loss = round(val_loss,3)
-        print(f'Val loss = {val_loss}')
-        return val_loss
+            # images = images.squeeze().cpu().detach().numpy()
+            # cv2.imshow('f', images[0])
+            # cv2.waitKey(0)
+
+        return round(np.mean(losses).item(),3)
 
 if __name__ == "__main__":
     main()

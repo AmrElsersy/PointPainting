@@ -53,8 +53,7 @@ def postprocessing(pred):
 def tensor_to_cv2(image):
     return image.squeeze(0).cpu().detach().numpy().transpose(1,2,0)
 
-
-def normalization_kitti_preprocessing(image):
+def train_preprocessing(image):
     mean=(0.3257, 0.3690, 0.3223)
     std=(0.2112, 0.2148, 0.2115)
 

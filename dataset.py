@@ -58,9 +58,12 @@ class KittiSemanticDataset(Dataset):
         image = np.asarray(image)
         semantic = np.asarray(semantic)
 
-        shape = (1242, 375)
+        shape = (1024, 512)
         image = cv2.resize(image, shape)
         semantic = cv2.resize(semantic, shape)
+
+        if self.transform:
+            image = self.transform(image)
         return image, semantic
 
     def __len__(self):
@@ -71,7 +74,8 @@ class KittiSemanticDataset(Dataset):
 
 
 def create_train_dataloader(root = 'data/KITTI', batch_size = 4):
-    dataset = KittiSemanticDataset(root = root, split='train')
+    transform = transforms.ToTensor()
+    dataset = KittiSemanticDataset(root = root, split='train', transform=transform)
     indices = list(range(0, 180))
     train_subset = Subset(dataset, indices)
     dataloader = DataLoader(train_subset, batch_size, shuffle=True)

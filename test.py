@@ -36,6 +36,13 @@ def test(args):
 
     for i in range(len(dataset)):
         image, semantic = dataset[i]
+        x = semantic[:,:,1]- semantic[:,:,0]
+        print(np.where(x != 0))
+        # print(semantic.shape)
+        # cv2.imshow('s', semantic)
+        # cv2.waitKey(0)
+
+
         original = np.asarray(image.copy())
 
         # (1, 3, 512, 1024)
