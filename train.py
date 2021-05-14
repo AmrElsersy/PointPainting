@@ -111,20 +111,14 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
     losses = []
 
     for images, labels in tqdm(dataloader):
-        # print('train shapes=', images.shape, labels.shape)
         images = images.to(device) # (batch, 3, H, W)
         labels = labels.to(device) # (batch, H, W) 
-        # print('after=', images.shape, labels.shape)
-        # print(images[0])
 
+        # image = images[0].cpu().detach().numpy().transpose(1,2,0)
+        # cv2.imshow('f', image)
+        # cv2.waitKey(0)
 
-        # images = train_preprocessing(images)
         logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
-        # logits = logits.argmax(dim=1) # (bath, 1, 1024, 2048) 
-        # logits = logits.argmax(dim=1).unsqueeze(1).float()
-
-        # # coloring
-        # semantics = visualizer.semantic_to_color(semantics) # (1024, 2048, 3)
 
         loss_main = criterion(logits, labels)
         loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
@@ -137,10 +131,6 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
         loss.backward()
         optimizer.step()
 
-        # images = images.squeeze().cpu().detach().numpy()
-        # cv2.imshow('f', images[0])
-        # cv2.waitKey(0)
-
     return round(np.mean(losses).item(),3)
 
 
@@ -151,23 +141,15 @@ def validate(model, criterion, dataloader, epoch):
 
     with torch.no_grad():
         for images, labels in tqdm(dataloader):
-
             images = images.to(device) # (batch, 3, H, W)
-            labels = labels.to(device) # (batch, 3, H, W) its 3 identical channels (each one is semantic map)
-            # images = train_preprocessing(images)
-            logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
-            logits = logits.argmax(dim=1) # (bath, 1, 1024, 2048) 
+            labels = labels.to(device) # (batch, H, W) 
 
-            loss_main = criterion(logits, labels)
-            # loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
-            # loss = loss_main + sum(loss_aux)
-            loss = loss_main
+            logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
+
+            loss = criterion(logits, labels)
             losses.append(loss.cpu().item())
 
-            # images = images.squeeze().cpu().detach().numpy()
-            # cv2.imshow('f', images[0])
-            # cv2.waitKey(0)
-
+            print(f'validation @ epoch {epoch} .. loss = {round(loss.item(),3)}')
         return round(np.mean(losses).item(),3)
 
 if __name__ == "__main__":

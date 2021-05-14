@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
-
 
 class OhemCELoss(nn.Module):
 
@@ -17,10 +17,9 @@ class OhemCELoss(nn.Module):
 
         # convert to long tensor (required by cross entropy)
         labels = labels.long()
-
-        # labels shape = [batch_size=4, 1, 512, 1024] one sheet that contains semantics ids (1,2,3,4..7...19) in 1 image
-        n_min = labels[labels != self.ignore_lb].numel() // 16
         loss = self.criteria(logits, labels).view(-1)
+
+        n_min = labels[labels != self.ignore_lb].numel() // 16
         loss_hard = loss[loss > self.thresh]
         if loss_hard.numel() < n_min:
             loss_hard, _ = loss.topk(n_min)

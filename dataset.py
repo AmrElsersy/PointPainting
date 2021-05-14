@@ -8,12 +8,12 @@ Description: KITTI & Cityscapes Dataset modules to read images with semantic ann
 import os, time, enum
 from PIL import Image
 import argparse
-import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 import torchvision.transforms.transforms as transforms
 import torchvision
 import numpy as np 
 import cv2
+from utils.label import labels, id2label
 
 class KittiSemanticDataset(Dataset):
     def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None):
@@ -62,9 +62,13 @@ class KittiSemanticDataset(Dataset):
         if self.mode == 'semantic': 
             semantic = semantic[:,:,0]
 
+        # print(semantic.shape)
         shape = (1024, 512)
         image = cv2.resize(image, shape)
         semantic = cv2.resize(semantic, shape)
+
+        if self.split == 'training':
+            semantic = self.remove_ignore_index_labels(semantic)
 
         if self.transform:
             image = self.transform(image)
@@ -76,6 +80,13 @@ class KittiSemanticDataset(Dataset):
     def read_image(self, path):
         return cv2.imread(path, cv2.IMREAD_COLOR)
 
+    def remove_ignore_index_labels(self, semantic):
+        for id in id2label:
+            label = id2label[id]
+            trainId = label.trainId
+            semantic[semantic == id] = trainId
+        # print(np.unique(semantic))
+        return semantic
 
 def create_train_dataloader(root = 'data/KITTI', batch_size = 4):
     transform = transforms.ToTensor()
