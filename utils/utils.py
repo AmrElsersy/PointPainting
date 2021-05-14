@@ -65,5 +65,3 @@ def train_preprocessing(image):
     image = image.sub_(mean).div_(std).clone()
     image = image.unsqueeze(0).to(device)
     return image
-
-

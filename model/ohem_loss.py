@@ -14,7 +14,11 @@ class OhemCELoss(nn.Module):
         self.criteria = nn.CrossEntropyLoss(ignore_index=ignore_lb, reduction='none')
 
     def forward(self, logits, labels):
-        # labels shape = [batch_size=4, 1, 1024, 2048] one sheet that contains semantics ids (1,2,3,4..7...19) in 1 image
+
+        # convert to long tensor (required by cross entropy)
+        labels = labels.long()
+
+        # labels shape = [batch_size=4, 1, 512, 1024] one sheet that contains semantics ids (1,2,3,4..7...19) in 1 image
         n_min = labels[labels != self.ignore_lb].numel() // 16
         loss = self.criteria(logits, labels).view(-1)
         loss_hard = loss[loss > self.thresh]

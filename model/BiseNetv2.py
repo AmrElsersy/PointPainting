@@ -330,6 +330,7 @@ class BiSeNetV2(nn.Module):
         feat_head = self.bga(feat_d, feat_s)
 
         logits = self.head(feat_head)
+        print('model images/logists', x.shape, logits.shape)
         if self.output_aux:
             logits_aux2 = self.aux2(feat2)
             logits_aux3 = self.aux3(feat3)

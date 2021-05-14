@@ -63,7 +63,7 @@ def main():
     start_epoch = 0
 
     # ======== models & loss ========== 
-    model = BiSeNetV2(19)
+    model = BiSeNetV2(n_classes=19, output_aux=True)
     loss = OhemCELoss(0.7)
     loss_aux = [OhemCELoss(0.7) for _ in range(4)]
 
@@ -111,23 +111,22 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
     losses = []
 
     for images, labels in tqdm(dataloader):
-        print('train shapes=', images.shape, labels.shape)
-        images = images.to(device) # (batch, H, W, 3)
-        labels = labels.to(device) # (batch, H, W, 3) its 3 identical channels (each one is semantic map)
-        images = images.permute(0, 3, 1, 2) # (batch, 3, H, W)
-        labels = labels.permute(0, 3, 1, 2) # (batch, 3, H, W)
-        print('after=', images.shape, labels.shape)
-        print(images[0])
+        # print('train shapes=', images.shape, labels.shape)
+        images = images.to(device) # (batch, 3, H, W)
+        labels = labels.to(device) # (batch, H, W) 
+        # print('after=', images.shape, labels.shape)
+        # print(images[0])
 
 
         # images = train_preprocessing(images)
         logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
         # logits = logits.argmax(dim=1) # (bath, 1, 1024, 2048) 
+        # logits = logits.argmax(dim=1).unsqueeze(1).float()
 
         # # coloring
         # semantics = visualizer.semantic_to_color(semantics) # (1024, 2048, 3)
 
-        loss_main = criterion(logits, labels[:,0,:,:])
+        loss_main = criterion(logits, labels)
         loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
         loss = loss_main + sum(loss_aux)
 
@@ -159,10 +158,10 @@ def validate(model, criterion, dataloader, epoch):
             logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
             logits = logits.argmax(dim=1) # (bath, 1, 1024, 2048) 
 
-            loss_main = criterion(logits, labels[:,0,:,:])
-            loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
-            loss = loss_main + sum(loss_aux)
-
+            loss_main = criterion(logits, labels)
+            # loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
+            # loss = loss_main + sum(loss_aux)
+            loss = loss_main
             losses.append(loss.cpu().item())
 
             # images = images.squeeze().cpu().detach().numpy()

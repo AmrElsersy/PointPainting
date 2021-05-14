@@ -58,6 +58,10 @@ class KittiSemanticDataset(Dataset):
         image = np.asarray(image)
         semantic = np.asarray(semantic)
 
+        # its 3 identical channels (each one is semantic map)
+        if self.mode == 'semantic': 
+            semantic = semantic[:,:,0]
+
         shape = (1024, 512)
         image = cv2.resize(image, shape)
         semantic = cv2.resize(semantic, shape)
