@@ -17,8 +17,9 @@ from utils.label import labels, id2label
 from utils.utils import TransformationTrain
 
 class KittiSemanticDataset(Dataset):
-    def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None):
+    def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None, transform_train=None):
         self.transform = transform
+        self.transform_train = transform_train
 
         assert split in ['train', 'test']
         self.split = 'training' if split == 'train' else 'testing'
@@ -44,6 +45,7 @@ class KittiSemanticDataset(Dataset):
         self.color_paths    = [os.path.join(self.colorPath, name) for name in color_names]
 
     def __getitem__(self, index):
+        # print('#'*50)
         image_path = self.images_paths[index]
         semantic_path = self.semantic_paths[index]
         color_path = self.color_paths[index]
@@ -71,8 +73,14 @@ class KittiSemanticDataset(Dataset):
         if self.split == 'training':
             semantic = self.remove_ignore_index_labels(semantic)
 
+        if self.transform_train:
+            image_label = self.transform_train(dict(im=image, lb=semantic))
+            image = image_label['im'   ].copy()
+            semantic = image_label['lb'].copy()
+
         if self.transform:
             image = self.transform(image)
+
         return image, semantic
 
     def __len__(self):
@@ -91,8 +99,9 @@ class KittiSemanticDataset(Dataset):
 
 def create_train_dataloader(root = 'data/KITTI', batch_size = 4):
     transform = transforms.ToTensor()
-    # transform = TransformationTrain(scales=[0.25, 2.], cropsize=[512, 1024])
-    dataset = KittiSemanticDataset(root = root, split='train', transform=transform)
+    transform_train = TransformationTrain(scales=[1, 1.3], cropsize=[512, 1024])
+    
+    dataset = KittiSemanticDataset(root = root, split='train', transform=transform, transform_train=transform_train)
     indices = list(range(0, 180))
     train_subset = Subset(dataset, indices)
     dataloader = DataLoader(train_subset, batch_size, shuffle=True)
@@ -118,7 +127,57 @@ def cityscapes_dataset(split = 'test', path = 'data/Cityscapes', mode ='semantic
     return dataset
 
 
+def semantic_to_color(semantic):
+    r = np.zeros((semantic.shape[:2])).astype(np.uint8)
+    g = np.zeros((semantic.shape[:2])).astype(np.uint8)
+    b = np.zeros((semantic.shape[:2])).astype(np.uint8)
+
+    for key in id2label:
+        label = id2label[key]   
+
+        if key == 0 or key == -1:
+            continue
+        if label.trainId == 255:
+            continue
+        id = label.trainId
+        color = label.color
+        indices = semantic == id
+        r[indices], g[indices], b[indices] = color
+    semantic = np.stack([b, g, r], axis=2)
+    return semantic
+
+def test_loaders():
+    dataloader = create_val_dataloader(batch_size=2)
+    for image, label in dataloader:
+        print('before', image.shape ,label.shape)
+        image = image[0].numpy()
+        label = label[0].numpy()
+        image = image.transpose(1,2,0)
+        # label = label.numpy().transpose(1,2,0)
+        print('after', image.shape ,label.shape)
+
+        # def semantic_callback(event,x,y,flags,param):
+            # print(label[y,x])
+        # cv2.namedWindow('semantic')
+        # cv2.setMouseCallback('semantic',semantic_callback)
+
+        # label = np.stack([label,label,label], axis=2)
+        label = semantic_to_color(label)
+        result = cv2.addWeighted((image*255).astype(np.uint8), 1, 
+                                    label.astype(np.uint8), .5, 
+                                    0, cv2.CV_32F)
+
+        cv2.imshow('result', result)
+        # cv2.imshow('image', image)
+        # cv2.imshow('semantic', label)
+        if cv2.waitKey(0) == 27:
+            cv2.destroyAllWidndows()
+            break
+
 def main():
+    test_loaders()
+    return
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, choices=['kitti', 'cityscapes'], default='kitti')
     parser.add_argument('--mode', type=str, choices=['semantic', 'color'], default='color')

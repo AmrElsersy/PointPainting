@@ -10,7 +10,8 @@ from PIL import Image
 import argparse
 import torch
 from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms.transforms as transforms
+from torchvision import transforms
+import torchvision.transforms.transforms as T
 import torchvision
 import numpy as np 
 import cv2
@@ -29,7 +30,7 @@ def preprocessing_kitti(image):
 
     new_shape = (1024,512)
     image = cv2.resize(image, new_shape)
-    image = transforms.ToTensor()(image)
+    image = T.ToTensor()(image)
 
     image = image.unsqueeze(0).to(device)
     return image
@@ -39,7 +40,7 @@ def preprocessing_cityscapes(image):
     std=(0.2112, 0.2148, 0.2115)
 
     if type(image) != torch.Tensor:
-        image = transforms.ToTensor()(image)
+        image = T.ToTensor()(image)
     dtype, device = image.dtype, image.device
     mean = torch.as_tensor(mean, dtype=dtype, device=device)[:, None, None]
     std = torch.as_tensor(std, dtype=dtype, device=device)[:, None, None]
@@ -64,9 +65,11 @@ class RandomResizedCrop(object):
         self.scales = scales
         self.size = size
 
-    def __call__(self, im, lb):
+    def __call__(self, im_lb):
         if self.size is None:
-            return im, lb
+            return im_lb
+
+        im, lb = im_lb['im'], im_lb['lb']
         assert im.shape[:2] == lb.shape[:2]
 
         crop_h, crop_w = self.size
@@ -88,19 +91,25 @@ class RandomResizedCrop(object):
         im_h, im_w, _ = im.shape
         sh, sw = np.random.random(2)
         sh, sw = int(sh * (im_h - crop_h)), int(sw * (im_w - crop_w))
-        return im[sh:sh+crop_h, sw:sw+crop_w, :].copy(), lb[sh:sh+crop_h, sw:sw+crop_w].copy()
-        
+        return dict(
+            im=im[sh:sh+crop_h, sw:sw+crop_w, :].copy(),
+            lb=lb[sh:sh+crop_h, sw:sw+crop_w].copy()
+        )
 
 class RandomHorizontalFlip(object):
 
     def __init__(self, p=0.5):
         self.p = p
 
-    def __call__(self, im, lb):
+    def __call__(self, im_lb):
         if np.random.random() < self.p:
-            return im, lb
+            return im_lb
+        im, lb = im_lb['im'], im_lb['lb']
         assert im.shape[:2] == lb.shape[:2]
-        return im[:, ::-1, :], lb[:, ::-1]
+        return dict(
+            im=im[:, ::-1, :],
+            lb=lb[:, ::-1],
+        )
 
 class ColorJitter(object):
 
@@ -112,7 +121,8 @@ class ColorJitter(object):
         if not saturation is None and saturation >= 0:
             self.saturation = [max(1-saturation, 0), 1+saturation]
 
-    def __call__(self, im, lb):
+    def __call__(self, im_lb):
+        im, lb = im_lb['im'], im_lb['lb']
         assert im.shape[:2] == lb.shape[:2]
         if not self.brightness is None:
             rate = np.random.uniform(*self.brightness)
@@ -123,7 +133,7 @@ class ColorJitter(object):
         if not self.saturation is None:
             rate = np.random.uniform(*self.saturation)
             im = self.adj_saturation(im, rate)
-        return im , lb
+        return dict(im=im, lb=lb,)
 
     def adj_saturation(self, im, rate):
         M = np.float32([
@@ -148,6 +158,7 @@ class ColorJitter(object):
         ]).clip(0, 255).astype(np.uint8)
         return table[im]
 
+
 class ToTensor(object):
     '''
     mean and std should be of the channel order 'bgr'
@@ -156,7 +167,8 @@ class ToTensor(object):
         self.mean = mean
         self.std = std
 
-    def __call__(self, im, lb):
+    def __call__(self, im_lb):
+        im, lb = im_lb['im'], im_lb['lb']
         im = im.transpose(2, 0, 1).astype(np.float32)
         im = torch.from_numpy(im).div_(255)
         dtype, device = im.dtype, im.device
@@ -165,30 +177,31 @@ class ToTensor(object):
         im = im.sub_(mean).div_(std).clone()
         if not lb is None:
             lb = torch.from_numpy(lb.astype(np.int64).copy()).clone()
-        return im, lb
+        return dict(im=im, lb=lb)
+
 
 class Compose(object):
 
     def __init__(self, do_list):
         self.do_list = do_list
 
-    def __call__(self, im, lb):
+    def __call__(self, im_lb):
         for comp in self.do_list:
-            im, lb = comp(im, lb)
-        return im, lb
+            im_lb = comp(im_lb)
+        return im_lb
 
 class TransformationTrain(object):
-    
+
     def __init__(self, scales, cropsize):
         self.trans_func = Compose([
             RandomResizedCrop(scales, cropsize),
             RandomHorizontalFlip(),
             ColorJitter(
-                brightness=0.4,
-                contrast=0.4,
-                saturation=0.4
-            ),
+                brightness=0.2,
+                contrast=0.2,
+                saturation=0.2
+            )
         ])
-    def __call__(self, im, lb):
-        im, lb = self.trans_func(im, lb)
-        return im, lb
+    def __call__(self, im_lb):
+        im_lb = self.trans_func(im_lb)
+        return im_lb

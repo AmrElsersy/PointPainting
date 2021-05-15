@@ -114,11 +114,12 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
         images = images.to(device) # (batch, 3, H, W)
         labels = labels.to(device) # (batch, H, W) 
 
-        image = images[0].cpu().detach().numpy().transpose(1,2,0)
-        cv2.imshow('f', image)
-        image = images[1].cpu().detach().numpy().transpose(1,2,0)
-        cv2.imshow('f1', image)
-        cv2.waitKey(0)
+        # print(images.shape, labels.shape)
+        # image = images[0].cpu().detach().numpy().transpose(1,2,0)
+        # cv2.imshow('f', image)
+        # image = images[1].cpu().detach().numpy().transpose(1,2,0)
+        # cv2.imshow('f1', image)
+        # cv2.waitKey(0)
 
         logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
 
