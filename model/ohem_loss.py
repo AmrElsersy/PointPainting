@@ -14,10 +14,12 @@ class OhemCELoss(nn.Module):
         self.criteria = nn.CrossEntropyLoss(ignore_index=ignore_lb, reduction='none')
 
     def forward(self, logits, labels):
-
         # convert to long tensor (required by cross entropy)
         labels = labels.long()
         loss = self.criteria(logits, labels).view(-1)
+        # print(labels)
+        # loss = self.criteria(logits, labels)
+        # return torch.mean(loss)
 
         n_min = labels[labels != self.ignore_lb].numel() // 16
         loss_hard = loss[loss > self.thresh]

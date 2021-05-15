@@ -11,7 +11,7 @@ from torch.utils.data import  DataLoader
 import numpy as np 
 import cv2
 from dataset import KittiSemanticDataset
-from utils.label import id2label
+from utils.label import id2label, trainId2label
 from utils.utils import tensor_to_cv2
 import torch.utils.tensorboard as tensorboard
 
@@ -85,12 +85,10 @@ class KittiVisualizer:
 
     def __show(self, image):
         cv2.namedWindow('total_image')
-        # def print_img(event,x,y,flags,param):
-        #     if event == cv2.EVENT_LBUTTONDOWN:
-        #         id = image[y,x]
-        #         print(id)
-        #         print(id, id2label[id].name)
-        # cv2.setMouseCallback('total_image', print_img)
+        def print_img(event,x,y,flags,param):
+            # if event == cv2.EVENT_LBUTTONDOWN:
+                print(image[y,x])
+        cv2.setMouseCallback('total_image', print_img)
         cv2.imshow("total_image", image)
         self.__show_2D()
 
@@ -104,15 +102,16 @@ class KittiVisualizer:
         g = np.zeros((semantic.shape[:2])).astype(np.uint8)
         b = np.zeros((semantic.shape[:2])).astype(np.uint8)
 
-        for key in id2label:
-            label = id2label[key]   
-
-            if key == 0 or key == -1:
+        for key in trainId2label:
+            label = trainId2label[key]
+            print(label)
+            if key == 255 or key == -1:
                 continue
-            if label.trainId == 255:
-                continue
+            # if label.trainId == 255:
+            #     continue
             
-            id = label.trainId
+            # id = label.trainId
+            id = key
             color = label.color
             indices = semantic == id
             r[indices], g[indices], b[indices] = color
@@ -124,11 +123,12 @@ class KittiVisualizer:
         self.pressed_btn = cv2.waitKey(0) & 0xff
         
 def main():
-    dataset = KittiSemanticDataset(mode = 'color')
+    dataset = KittiSemanticDataset(mode = 'semantic')
     visualizer = KittiVisualizer()
     for i in range(len(dataset)):
         image, semantic = dataset[i]
         print(image.shape)
+        semantic = visualizer.semantic_to_color(semantic)
         new_img = visualizer.add_semantic_to_image(image, semantic)
         cv2.imshow('image', new_img)
         if cv2.waitKey(0) == 27:

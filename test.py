@@ -40,7 +40,6 @@ def test(args):
         # cv2.imshow('s', semantic)
         # cv2.waitKey(0)
 
-
         original = np.asarray(image.copy())
 
         # (1, 3, 512, 1024)
@@ -53,15 +52,19 @@ def test(args):
         pred = postprocessing(pred) # (1024, 2048) 
 
         # coloring
-        pred = visualizer.semantic_to_color(pred) # (1024, 2048, 3)
+        pred = np.stack([pred,pred,pred], axis=2).astype(np.uint8) # gray semantic
+        # pred = visualizer.semantic_to_color(pred) # (1024, 2048, 3)
 
         # get numpy image back
         image = image.squeeze().detach().numpy().transpose(1,2,0)
 
         # save
         pred_color = visualizer.add_semantic_to_image(original, pred)
-
         visualizer.visualize_test(original, pred, pred_color)
+        # cv2.imshow('image', image)
+        # cv2.imshow('pred', pred)
+        # if cv2.waitKey(0) == 27:
+        #     break
         if visualizer.pressed_btn == 27:
             cv2.destroyAllWindows()
             cv2.imwrite('./res.jpg', pred)
@@ -69,7 +72,7 @@ def test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
+    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2_140.pth',)
     parser.add_argument('--dataset', choices=['cityscapes', 'kitti'], default='kitti')
     args = parser.parse_args()
     test(args)

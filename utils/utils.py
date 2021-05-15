@@ -158,7 +158,6 @@ class ColorJitter(object):
         ]).clip(0, 255).astype(np.uint8)
         return table[im]
 
-
 class ToTensor(object):
     '''
     mean and std should be of the channel order 'bgr'
@@ -178,7 +177,6 @@ class ToTensor(object):
         if not lb is None:
             lb = torch.from_numpy(lb.astype(np.int64).copy()).clone()
         return dict(im=im, lb=lb)
-
 
 class Compose(object):
 

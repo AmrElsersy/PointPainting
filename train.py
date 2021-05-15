@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=2, help="training batch size")
     parser.add_argument('--tensorboard', type=str, default='checkpoints/tensorboard', help='path log dir of tensorboard')
     parser.add_argument('--logging', type=str, default='checkpoints/logging', help='path of logging')
-    parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+    parser.add_argument('--lr', type=float, default=0.05, help='learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-6, help='optimizer weight decay')
     parser.add_argument('--datapath', type=str, default='data/KITTI', help='root path of dataset')
     parser.add_argument('--pretrained', type=str,default='checkpoints/BiseNetv2.pth',help='load checkpoint')
@@ -113,8 +113,7 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
     for images, labels in tqdm(dataloader):
         images = images.to(device) # (batch, 3, H, W)
         labels = labels.to(device) # (batch, H, W) 
-
-        # print(images.shape, labels.shape)
+        # print(labels)
         # image = images[0].cpu().detach().numpy().transpose(1,2,0)
         # cv2.imshow('f', image)
         # image = images[1].cpu().detach().numpy().transpose(1,2,0)

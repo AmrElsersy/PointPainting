@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
 parser.add_argument('--path', dest='img_path', type=str, 
 # default='data/Cityscapes/leftImg8bit/test/berlin/berlin_000001_000019_leftImg8bit.png',)
-default='data/KITTI/testing/image_2/000000_10.png',)
+default='data/KITTI/testing/image_2/000169_10.png',)
 args = parser.parse_args()
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -48,8 +48,10 @@ image = preprocessing_kitti(image)
 pred = model(image)
 pred = postprocessing(pred)
 
+
 # coloring
-pred = visualizer.semantic_to_color(pred)
+# pred = visualizer.semantic_to_color(pred)
+pred = np.stack([pred,pred,pred], axis=2).astype(np.uint8)
 
 # visualize & save
 total = visualizer.add_semantic_to_image(original, pred)

@@ -73,10 +73,10 @@ class KittiSemanticDataset(Dataset):
         if self.split == 'training':
             semantic = self.remove_ignore_index_labels(semantic)
 
-        if self.transform_train:
-            image_label = self.transform_train(dict(im=image, lb=semantic))
-            image = image_label['im'   ].copy()
-            semantic = image_label['lb'].copy()
+        # if self.transform_train:
+        #     image_label = self.transform_train(dict(im=image, lb=semantic))
+        #     image = image_label['im'   ].copy()
+        #     semantic = image_label['lb'].copy()
 
         if self.transform:
             image = self.transform(image)
@@ -147,7 +147,7 @@ def semantic_to_color(semantic):
     return semantic
 
 def test_loaders():
-    dataloader = create_val_dataloader(batch_size=2)
+    dataloader = create_train_dataloader(batch_size=1)
     for image, label in dataloader:
         print('before', image.shape ,label.shape)
         image = image[0].numpy()
@@ -155,21 +155,22 @@ def test_loaders():
         image = image.transpose(1,2,0)
         # label = label.numpy().transpose(1,2,0)
         print('after', image.shape ,label.shape)
+        print(label)
 
-        # def semantic_callback(event,x,y,flags,param):
-            # print(label[y,x])
-        # cv2.namedWindow('semantic')
-        # cv2.setMouseCallback('semantic',semantic_callback)
+        def semantic_callback(event,x,y,flags,param):
+            print(label[y,x])
+        cv2.namedWindow('semantic')
+        cv2.setMouseCallback('semantic',semantic_callback)
 
         # label = np.stack([label,label,label], axis=2)
-        label = semantic_to_color(label)
-        result = cv2.addWeighted((image*255).astype(np.uint8), 1, 
-                                    label.astype(np.uint8), .5, 
-                                    0, cv2.CV_32F)
+        # label = semantic_to_color(label)
+        # result = cv2.addWeighted((image*255).astype(np.uint8), 1, 
+        #                             label.astype(np.uint8), .5, 
+        #                             0, cv2.CV_32F)
 
-        cv2.imshow('result', result)
-        # cv2.imshow('image', image)
-        # cv2.imshow('semantic', label)
+        # cv2.imshow('result', result)
+        cv2.imshow('image', image)
+        cv2.imshow('semantic', label)
         if cv2.waitKey(0) == 27:
             cv2.destroyAllWidndows()
             break
