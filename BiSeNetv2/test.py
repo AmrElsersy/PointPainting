@@ -55,7 +55,7 @@ def test(args):
 
         # loss from just logits (not including aux)
         loss = Loss(pred, torch.from_numpy(semantic).unsqueeze(0))
-        print('loss',loss.item())
+        # print('loss',loss.item())
 
         pred = postprocessing(pred) # (1024, 2048) 
 
@@ -83,7 +83,7 @@ def test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2_60.pth',)
+    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--dataset', choices=['cityscapes', 'kitti'], default='kitti')
     args = parser.parse_args()
     test(args)

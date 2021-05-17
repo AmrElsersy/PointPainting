@@ -20,7 +20,7 @@ np.random.seed(123)
 
 # args
 parser = argparse.ArgumentParser()
-parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
+parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2_150.pth',)
 parser.add_argument('--path', dest='img_path', type=str, 
 # default='data/Cityscapes/leftImg8bit/test/berlin/berlin_000001_000019_leftImg8bit.png',)
 default='data/KITTI/testing/image_2/000169_10.png',)
@@ -34,7 +34,7 @@ visualizer = KittiVisualizer()
 # define model
 model = BiSeNetV2(19)
 checkpoint = torch.load(args.weight_path, map_location=dev)
-model.load_state_dict(checkpoint, strict=False)
+model.load_state_dict(checkpoint['bisenetv2'], strict=False)
 model.eval()
 model.to(device)
 
@@ -50,8 +50,8 @@ pred = postprocessing(pred)
 
 
 # coloring
-# pred = visualizer.semantic_to_color(pred)
-pred = np.stack([pred,pred,pred], axis=2).astype(np.uint8)
+pred = visualizer.semantic_to_color(pred)
+# pred = np.stack([pred,pred,pred], axis=2).astype(np.uint8)
 
 # visualize & save
 total = visualizer.add_semantic_to_image(original, pred)

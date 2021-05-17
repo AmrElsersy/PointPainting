@@ -86,7 +86,7 @@ class KittiVisualizer:
     def __show(self, image):
         cv2.namedWindow('total_image')
         def print_img(event,x,y,flags,param):
-            # if event == cv2.EVENT_LBUTTONDOWN:
+            if event == cv2.EVENT_LBUTTONDOWN:
                 print(image[y,x])
         cv2.setMouseCallback('total_image', print_img)
         cv2.imshow("total_image", image)
@@ -104,7 +104,7 @@ class KittiVisualizer:
 
         for key in trainId2label:
             label = trainId2label[key]
-            print(label)
+            # print(label)
             if key == 255 or key == -1:
                 continue
             # if label.trainId == 255:
