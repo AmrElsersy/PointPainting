@@ -3,4 +3,5 @@ KITTI/
 __pycache__/
 *.pth
 *.jpg
-# tensorboard/
+tensorboard/
+Videos/
