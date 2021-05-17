@@ -306,7 +306,7 @@ class SegmentHead(nn.Module):
 
 
 class BiSeNetV2(nn.Module):
-    def __init__(self, n_classes, output_aux=False):
+    def __init__(self, n_classes=19, output_aux=False):
         super(BiSeNetV2, self).__init__()
         self.output_aux = output_aux
         self.detail = DetailBranch()
