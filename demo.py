@@ -31,7 +31,7 @@ def main(args):
     visualizer = Visualizer()
 
     frames = []
-    frame_shape = (1247, 375)
+    frame_shape = (750, 900)
     avg_time = 0
 
     for i in range(len(video)):
@@ -45,23 +45,30 @@ def main(args):
         print(semantic.shape)
 
         color_image = visualizer.get_colored_image(image, semantic)
-        frames.append(color_image)
+        scene_2D = visualizer.get_scene_2D(image, pointcloud, calib)
+        # cv2.imshow('im', color_image)
+        # frames.append(color_image)
+        frames.append(scene_2D)
 
         # if cv2.waitKey(0) == 27:
         #     cv2.destroyAllWindows()
         #     break
         avg_time += (time.time()-t1)
         print(f'{i} sample')
+        if i == 60:
+            break
 
     # Time & FPS
     avg_time /= len(video)
     FPS = 1 / avg_time
-    print("Average Time",round(avg_time,2), " FPS", round(FPS,2))
+    print("Average Time",round(avg_time*1000,2), "ms  FPS", round(FPS,2))
     # Save Video
     save_path = os.path.join(args.save_path, 'demo.mp4')
-    out_video = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'MP4V'), 30, frame_shape)
+    out_video = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), 20, frame_shape)
     for frame in frames:
+        frame = cv2.resize(frame, frame_shape)
         out_video.write(frame)
+    print(f'Saved Video @ {save_path}')
 
 
 if __name__ == '__main__':
