@@ -144,8 +144,9 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
 
 
         loss_main = criterion(logits, labels)
-        loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
-        loss = loss_main + sum(loss_aux)
+        # loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
+        # loss = loss_main + sum(loss_aux)
+        loss = loss_main
 
         losses.append(loss.cpu().item())
         print(f'training @ epoch {epoch} .. loss = {round(loss.item(),3)}')
