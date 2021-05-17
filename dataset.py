@@ -73,10 +73,10 @@ class KittiSemanticDataset(Dataset):
         if self.split == 'training':
             semantic = self.remove_ignore_index_labels(semantic)
 
-        # if self.transform_train:
-        #     image_label = self.transform_train(dict(im=image, lb=semantic))
-        #     image = image_label['im'   ].copy()
-        #     semantic = image_label['lb'].copy()
+        if self.transform_train:
+            image_label = self.transform_train(dict(im=image, lb=semantic))
+            image = image_label['im'   ].copy()
+            semantic = image_label['lb'].copy()
 
         if self.transform:
             image = self.transform(image)

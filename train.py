@@ -117,9 +117,11 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
         labels = labels.to(device) # (batch, H, W) 
         # print(labels)
 
-
+        # label = labels[0].cpu().detach().numpy()
         # image = images[0].cpu().detach().numpy().transpose(1,2,0)
+        # cv2.imshow('label', label)
         # cv2.imshow('image', image)
+        # cv2.waitKey(0)
 
         logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
 
@@ -144,9 +146,9 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
 
 
         loss_main = criterion(logits, labels)
-        # loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
-        # loss = loss_main + sum(loss_aux)
-        loss = loss_main
+        loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
+        loss = loss_main + sum(loss_aux)
+        # loss = loss_main
 
         losses.append(loss.cpu().item())
         print(f'training @ epoch {epoch} .. loss = {round(loss.item(),3)}')
