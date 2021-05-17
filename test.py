@@ -14,6 +14,7 @@ from visualization import KittiVisualizer
 from utils.utils import preprocessing_cityscapes, preprocessing_kitti, postprocessing
 
 from model.BiseNetv2 import BiSeNetV2
+from model.ohem_loss import OhemCELoss
 from config import cfg
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -33,6 +34,8 @@ def test(args):
     model.load_state_dict(checkpoint, strict=False)
     model.eval()
     model.to(device)
+    Loss = OhemCELoss(0.7)
+
 
     for i in range(len(dataset)):
         image, semantic = dataset[i]
@@ -48,7 +51,13 @@ def test(args):
         else:
             image = preprocessing_cityscapes(image)
 
+        print(image)
         pred = model(image) # (19, 1024, 2048)
+        
+        # loss from just logits (not including aux)
+        loss = Loss(pred, torch.from_numpy(semantic).unsqueeze(0))
+        print('loss',loss.item())
+
         pred = postprocessing(pred) # (1024, 2048) 
 
         # coloring
@@ -59,8 +68,9 @@ def test(args):
         image = image.squeeze().detach().numpy().transpose(1,2,0)
 
         # save
+        semantic = np.stack([semantic,semantic,semantic], axis=2)
         pred_color = visualizer.add_semantic_to_image(original, pred)
-        visualizer.visualize_test(original, pred, pred_color)
+        visualizer.visualize_test(original, pred, semantic)
         # cv2.imshow('image', image)
         # cv2.imshow('pred', pred)
         # if cv2.waitKey(0) == 27:
@@ -72,7 +82,7 @@ def test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2_140.pth',)
+    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
     parser.add_argument('--dataset', choices=['cityscapes', 'kitti'], default='kitti')
     args = parser.parse_args()
     test(args)

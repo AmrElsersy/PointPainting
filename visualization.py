@@ -71,7 +71,7 @@ class KittiVisualizer:
         new_label_height = int(label_h * scene_width / label_w)
 
         image = cv2.resize(image, (scene_width, new_image_height))
-        semantic = cv2.resize(semantic, (scene_width, new_semantic_height))
+        semantic = cv2.resize(semantic, (scene_width, new_semantic_height), interpolation=cv2.INTER_NEAREST)
         label = cv2.resize(label, (scene_width, new_label_height))
 
         total_image = np.zeros((new_image_height + new_semantic_height + new_label_height, 

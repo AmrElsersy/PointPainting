@@ -12,9 +12,13 @@ class OhemCELoss(nn.Module):
         self.thresh = -torch.log(torch.tensor(thresh, requires_grad=False, dtype=torch.float)).to(device)
         self.ignore_lb = ignore_lb
         self.criteria = nn.CrossEntropyLoss(ignore_index=ignore_lb, reduction='none')
+        self.simple_criteria = nn.CrossEntropyLoss(ignore_index=ignore_lb)
 
     def forward(self, logits, labels):
+        return self.simple_cross_entropy(logits, labels)
         # convert to long tensor (required by cross entropy)
+        print(logits.shape, labels.shape)
+        
         labels = labels.long()
         loss = self.criteria(logits, labels).view(-1)
         # print(labels)
@@ -28,5 +32,6 @@ class OhemCELoss(nn.Module):
         return torch.mean(loss_hard)
 
     def simple_cross_entropy(self, logits, labels):
-        loss = self.criteria(logits, labels).view(-1)
+        labels = labels.long()
+        loss = self.simple_criteria(logits, labels).view(-1)
         return torch.mean(loss)

@@ -70,15 +70,17 @@ def main():
     # ========= load weights ===========
     if args.resume:
         checkpoint = torch.load(args.pretrained, map_location=device)
-        model.load_state_dict(checkpoint['bisenetv2'], strict=False)
-        start_epoch = checkpoint['epoch'] + 1
+        # model.load_state_dict(checkpoint['bisenetv2'], strict=False)
+        # start_epoch = checkpoint['epoch'] + 1
+        model.load_state_dict(checkpoint, strict=False)
+        start_epoch = 0
         print(f'\tLoaded checkpoint from {args.pretrained}\n')
         time.sleep(1)
     else:
         print("******************* Start training from scratch *******************\n")
         # time.sleep(2)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=args.lr_patience, verbose=True)
     
     # ========================================================================
@@ -114,13 +116,32 @@ def train_one_epoch(model, criterion, criterion_aux, optimizer, dataloader, epoc
         images = images.to(device) # (batch, 3, H, W)
         labels = labels.to(device) # (batch, H, W) 
         # print(labels)
+
+
         # image = images[0].cpu().detach().numpy().transpose(1,2,0)
-        # cv2.imshow('f', image)
-        # image = images[1].cpu().detach().numpy().transpose(1,2,0)
-        # cv2.imshow('f1', image)
-        # cv2.waitKey(0)
+        # cv2.imshow('image', image)
 
         logits, *logits_aux = model(images) # (batch, 19, 1024, 2048)
+
+        # pred = logits.argmax(dim=1)
+        # pred = pred[0].cpu().detach().numpy().astype(np.uint8)
+        # def callback(event,x,y,flags,param):
+        #     if event == cv2.EVENT_LBUTTONDOWN:
+        #         print(pred[y,x])
+        # cv2.namedWindow('pred')
+        # cv2.setMouseCallback('pred',callback)
+        # print(pred.shape)
+        # cv2.imshow('pred', pred)
+
+        # def callback2(event,x,y,flags,param):
+        #     if event == cv2.EVENT_LBUTTONDOWN:
+        #         print(label[y,x])
+        # cv2.namedWindow('label')
+        # cv2.setMouseCallback('label',callback2)
+        # label = labels[0].cpu().detach().numpy()
+        # cv2.imshow('label', label)
+        # cv2.waitKey(0)
+
 
         loss_main = criterion(logits, labels)
         loss_aux = [crit(lgt, labels) for crit, lgt in zip(criterion_aux, logits_aux)]
