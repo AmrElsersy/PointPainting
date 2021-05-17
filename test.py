@@ -31,7 +31,7 @@ def test(args):
     # define model
     model = BiSeNetV2(19)
     checkpoint = torch.load(args.weight_path, map_location=dev)
-    model.load_state_dict(checkpoint, strict=False)
+    model.load_state_dict(checkpoint['bisenetv2'], strict=False)
     model.eval()
     model.to(device)
     Loss = OhemCELoss(0.7)
@@ -39,7 +39,6 @@ def test(args):
 
     for i in range(len(dataset)):
         image, semantic = dataset[i]
-        # print(semantic.shape)
         # cv2.imshow('s', semantic)
         # cv2.waitKey(0)
 
@@ -51,9 +50,9 @@ def test(args):
         else:
             image = preprocessing_cityscapes(image)
 
-        print(image)
+        # print(image)
         pred = model(image) # (19, 1024, 2048)
-        
+
         # loss from just logits (not including aux)
         loss = Loss(pred, torch.from_numpy(semantic).unsqueeze(0))
         print('loss',loss.item())
@@ -61,15 +60,17 @@ def test(args):
         pred = postprocessing(pred) # (1024, 2048) 
 
         # coloring
-        pred = np.stack([pred,pred,pred], axis=2).astype(np.uint8) # gray semantic
-        # pred = visualizer.semantic_to_color(pred) # (1024, 2048, 3)
+        # pred = np.stack([pred,pred,pred], axis=2).astype(np.uint8) # gray semantic
+        pred = visualizer.semantic_to_color(pred) # (1024, 2048, 3)
 
         # get numpy image back
         image = image.squeeze().detach().numpy().transpose(1,2,0)
 
         # save
-        semantic = np.stack([semantic,semantic,semantic], axis=2)
-        pred_color = visualizer.add_semantic_to_image(original, pred)
+        # semantic = np.stack([semantic,semantic,semantic], axis=2)
+        semantic = visualizer.semantic_to_color(semantic) # (1024, 2048, 3)
+
+        # pred_color = visualizer.add_semantic_to_image(original, pred)
         visualizer.visualize_test(original, pred, semantic)
         # cv2.imshow('image', image)
         # cv2.imshow('pred', pred)
@@ -82,7 +83,7 @@ def test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2.pth',)
+    parser.add_argument('--weight_path', type=str, default='checkpoints/BiseNetv2_60.pth',)
     parser.add_argument('--dataset', choices=['cityscapes', 'kitti'], default='kitti')
     args = parser.parse_args()
     test(args)
