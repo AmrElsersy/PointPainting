@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-import KittiCalibration
+from KittiCalibration import KittiCalibration
 
 class KittiVideo:
     """ Load data for KITTI videos """
@@ -11,8 +11,8 @@ class KittiVideo:
         self.calib_root = calib_root
 
         self.calib = KittiCalibration(calib_path=calib_root, from_video=True)
-        self.images_dir = os.path.join(self.video_root, 'image_2')
-        self.lidar_dir = os.path.join(self.video_root, 'velodyne')
+        self.images_dir = os.path.join(self.video_root, 'image_02/data')
+        self.lidar_dir = os.path.join(self.video_root, 'velodyne_points/data')
 
         self.images_filenames = sorted(
             [os.path.join(self.images_dir, filename) for filename in os.listdir(self.images_dir)]
@@ -22,8 +22,7 @@ class KittiVideo:
             [os.path.join(self.lidar_dir, filename) for filename in os.listdir(self.lidar_dir)]
         )
 
-        assert(len(self.images_filenames) == len(self.lidar_filenames))
-        self.num_samples = len(self.imgL_filenames)
+        self.num_samples = min(len(self.images_filenames), len(self.lidar_filenames))
 
     def __len__(self):
         return self.num_samples
@@ -34,7 +33,7 @@ class KittiVideo:
 
     def __get_image(self, index):
         assert index < self.num_samples
-        path = self.images_dir[index]
+        path = self.images_filenames[index]
         return cv2.imread(path)
     
     def __get_lidar(self, index):
