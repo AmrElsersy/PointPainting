@@ -47,15 +47,20 @@ def main(args):
         color_image = visualizer.get_colored_image(image, semantic)
         scene_2D = visualizer.get_scene_2D(image, pointcloud, calib)
         # cv2.imshow('im', color_image)
-        # frames.append(color_image)
-        frames.append(scene_2D)
 
+        if args.mode == 'image':
+            frames.append(color_image)
+        elif args.mode == '2d':
+            frames.append(scene_2D)
+        elif args.mode == '3d':
+            visualizer.visuallize_pointcloud(pointcloud)
+            
         # if cv2.waitKey(0) == 27:
         #     cv2.destroyAllWindows()
         #     break
         avg_time += (time.time()-t1)
         print(f'{i} sample')
-        if i == 60:
+        if i == 10:
             break
 
     # Time & FPS
@@ -79,6 +84,8 @@ if __name__ == '__main__':
     default='Videos/2/2011_09_26_calib/2011_09_26',)
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--save_path', type=str, default='Videos',)
+    parser.add_argument('--mode', type=str, default='2d', choices=['img', '2d', '3d'], 
+    help='visualization mode .. img is semantic image .. 2d is semantic + bev .. 3d is colored pointcloud')
     args = parser.parse_args()
     main(args)
 
