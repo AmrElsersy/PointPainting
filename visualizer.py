@@ -49,7 +49,7 @@ class Visualizer():
         
         self.R = rotx(-np.pi/3) @ rotz(np.pi/2)
 
-    def visuallize_pointcloud(self, pointcloud):
+    def visuallize_pointcloud(self, pointcloud, blocking = False):
         pointcloud = pointcloud[:,:3]
         colors = np.zeros((pointcloud.shape[0], 3))
 
@@ -58,15 +58,18 @@ class Visualizer():
 
         self.__pcd.rotate(self.R, self.__pcd.get_center())
 
-        # non blocking visualization
-        self.__visualizer.add_geometry(self.__pcd)
+        if blocking:
+            o3d.visualization.draw_geometries([self.__pcd])
+        else:
+            # non blocking visualization
+            self.__visualizer.add_geometry(self.__pcd)
 
-        # control the view camera (must be after add_geometry())
-        self.__view_control.translate(40,0)
-        self.__view_control.set_zoom(0.1)
+            # control the view camera (must be after add_geometry())
+            self.__view_control.translate(40,0)
+            self.__view_control.set_zoom(0.1)
 
-        self.__visualizer.update_renderer()
-        self.__visualizer.poll_events()
+            self.__visualizer.update_renderer()
+            self.__visualizer.poll_events()
         
         # save screenshot
         # self.__visualizer.capture_screen_image(path)
@@ -76,7 +79,7 @@ class Visualizer():
 
     def get_scene_2D(self, image, pointcloud, calib=None, visualize=False):
         bev = pointcloud_to_bev(pointcloud)
-        print(bev.shape)
+        # print(bev.shape)
         scene_width = self.scene_2D_width        
         image_h, image_w = image.shape[:2]
         bev_h, bev_w = bev.shape[:2]

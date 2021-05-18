@@ -10,6 +10,7 @@ from KittiVideo import KittiVideo
 from visualizer import Visualizer
 from BiSeNetv2.model.BiseNetv2 import BiSeNetV2
 from BiSeNetv2.utils.utils import preprocessing_kitti, postprocessing
+from pointpainting import PointPainter
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
@@ -22,6 +23,8 @@ def main(args):
     bisenetv2.eval()
     bisenetv2.to(device)
 
+    # Fusion
+    painter = PointPainter()
 
     video = KittiVideo(
         video_root=args.video_path,
@@ -47,17 +50,23 @@ def main(args):
         color_image = visualizer.get_colored_image(image, semantic)
         scene_2D = visualizer.get_scene_2D(image, pointcloud, calib)
         # cv2.imshow('im', color_image)
+        
+        painter.paint(pointcloud, semantic, calib)
 
-        if args.mode == 'image':
-            frames.append(color_image)
-        elif args.mode == '2d':
-            frames.append(scene_2D)
-        elif args.mode == '3d':
-            visualizer.visuallize_pointcloud(pointcloud)
-            
-        # if cv2.waitKey(0) == 27:
-        #     cv2.destroyAllWindows()
-        #     break
+
+        if args.mode == '3d':
+            visualizer.visuallize_pointcloud(pointcloud, blocking=True)
+        else:
+            if args.mode == 'image':
+                frames.append(color_image)
+                cv2.imshow('color_image', color_image)
+            elif args.mode == '2d':
+                frames.append(scene_2D)
+                cv2.imshow('scene', scene_2D)       
+            if cv2.waitKey(0) == 27:
+                cv2.destroyAllWindows()
+                break
+
         avg_time += (time.time()-t1)
         print(f'{i} sample')
         if i == 10:
@@ -84,7 +93,7 @@ if __name__ == '__main__':
     default='Videos/2/2011_09_26_calib/2011_09_26',)
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--save_path', type=str, default='Videos',)
-    parser.add_argument('--mode', type=str, default='2d', choices=['img', '2d', '3d'], 
+    parser.add_argument('--mode', type=str, default='3d', choices=['img', '2d', '3d'], 
     help='visualization mode .. img is semantic image .. 2d is semantic + bev .. 3d is colored pointcloud')
     args = parser.parse_args()
     main(args)
