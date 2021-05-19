@@ -3,7 +3,7 @@ import numpy as np
 # =========================  Config ===============================
 boundary = {
     "minX": 0,
-    "maxX": 50,
+    "maxX": 100,
     "minY": -25,
     "maxY": 25,
     "minZ": -2.73,
@@ -66,9 +66,9 @@ def pointcloud_to_bev(pointcloud):
 
 def clip_pointcloud(pointcloud):
 
-    mask = np.where((pointcloud[:, 0] >= boundary["minX"]) & (pointcloud[:,0] <= boundary["maxX"]) &
-                    (pointcloud[:, 1] >= boundary["minY"]) & (pointcloud[:,1] <= boundary["maxY"]) &
-                    (pointcloud[:, 2] >= boundary["minZ"]) & (pointcloud[:,2] <= boundary["maxZ"])
+    mask = np.where((pointcloud[:, 0] >= boundary["minX"]) & (pointcloud[:,0] <= boundary["maxX"])
+                    # (pointcloud[:, 1] >= boundary["minY"]) & (pointcloud[:,1] <= boundary["maxY"])
+                    # (pointcloud[:, 2] >= boundary["minZ"]) & (pointcloud[:,2] <= boundary["maxZ"])
     )
 
     return pointcloud[mask]

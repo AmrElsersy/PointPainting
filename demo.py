@@ -11,6 +11,7 @@ from visualizer import Visualizer
 from BiSeNetv2.model.BiseNetv2 import BiSeNetV2
 from BiSeNetv2.utils.utils import preprocessing_kitti, postprocessing
 from pointpainting import PointPainter
+from bev_utils import clip_pointcloud
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
@@ -45,22 +46,21 @@ def main(args):
         input_image = preprocessing_kitti(image)
         semantic = bisenetv2(input_image)
         semantic = postprocessing(semantic)
-        print(semantic.shape)
-
-        color_image = visualizer.get_colored_image(image, semantic)
-        scene_2D = visualizer.get_scene_2D(image, pointcloud, calib)
-        # cv2.imshow('im', color_image)
+        # print(semantic.shape, image.shape)
         
-        painter.paint(pointcloud, semantic, calib)
-
-
+        pointcloud = clip_pointcloud(pointcloud)
+        painted_pointcloud = painter.paint(pointcloud, semantic, calib)
         if args.mode == '3d':
-            visualizer.visuallize_pointcloud(pointcloud, blocking=True)
+            visualizer.visuallize_pointcloud(painted_pointcloud, blocking=False)
+            # visualizer.visuallize_pointcloud(pointcloud, blocking=True)
+
         else:
-            if args.mode == 'image':
+            if args.mode == 'img':
+                color_image = visualizer.get_colored_image(image, semantic)
                 frames.append(color_image)
                 cv2.imshow('color_image', color_image)
             elif args.mode == '2d':
+                scene_2D = visualizer.get_scene_2D(image, pointcloud, calib)
                 frames.append(scene_2D)
                 cv2.imshow('scene', scene_2D)       
             if cv2.waitKey(0) == 27:
@@ -69,8 +69,8 @@ def main(args):
 
         avg_time += (time.time()-t1)
         print(f'{i} sample')
-        if i == 10:
-            break
+        # if i == 10:
+        #     break
 
     # Time & FPS
     avg_time /= len(video)

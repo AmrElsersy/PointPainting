@@ -6,6 +6,7 @@ sys.path.insert(0, 'BiSeNetv2')
 
 from BiSeNetv2.visualization import KittiVisualizer
 from bev_utils import pointcloud_to_bev
+from BiSeNetv2.utils.label import trainId2label
 
 import open3d as o3d
 
@@ -50,8 +51,10 @@ class Visualizer():
         self.R = rotx(-np.pi/3) @ rotz(np.pi/2)
 
     def visuallize_pointcloud(self, pointcloud, blocking = False):
+
+        semantics  = pointcloud[:,3]
         pointcloud = pointcloud[:,:3]
-        colors = np.zeros((pointcloud.shape[0], 3))
+        colors = self.__semantics_to_colors(semantics)
 
         self.__pcd.points = o3d.utility.Vector3dVector(pointcloud)
         self.__pcd.colors = o3d.utility.Vector3dVector(colors)
@@ -66,13 +69,27 @@ class Visualizer():
 
             # control the view camera (must be after add_geometry())
             self.__view_control.translate(40,0)
-            self.__view_control.set_zoom(0.1)
+            self.__view_control.set_zoom(0.3)
 
             self.__visualizer.update_renderer()
             self.__visualizer.poll_events()
         
         # save screenshot
         # self.__visualizer.capture_screen_image(path)
+
+    def __semantics_to_colors(self, semantics):
+        colors = np.zeros((semantics.shape[0], 3))
+        return colors
+        for id in trainId2label:
+            label = trainId2label[id]
+            if id == 255 or id == -1:
+                continue
+
+            color = label.color
+            indices = semantics == id
+            colors[indices] = color
+
+        return colors
 
     def close_3d(self):
         self.__visualizer.destroy_window()
@@ -118,4 +135,6 @@ class Visualizer():
         # bev = np.dstack((intensity_map, height_map, density_map))
 
         return bev
+
+
 
