@@ -5,4 +5,4 @@ __pycache__/
 *.jpg
 tensorboard/
 Videos/
-.ipynb_checkpoints/
+# .ipynb_checkpoints/
