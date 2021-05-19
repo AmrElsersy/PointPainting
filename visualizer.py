@@ -33,19 +33,24 @@ def rotz(t):
         [0, 0, 1]])
 
 class Visualizer():
-    def __init__(self):
+    def __init__(self, mode='3d'):
         self.__semantic_visualizer = KittiVisualizer()
         self.scene_2D_width = 750
         self.user_press =None
 
-        # 3D
+        if mode != '3d':
+            return
+            
         self.__visualizer = o3d.visualization.Visualizer()
         self.__visualizer.create_window(width = 1280, height=720)
         self.__pcd = o3d.geometry.PointCloud()
         self.__visualizer.add_geometry(self.__pcd)
 
+        opt = self.__visualizer.get_render_option()   
+        opt.background_color = np.asarray([0, 0, 0])
+        self.zoom = 0.4 # smaller is zoomer
+
         self.__view_control = self.__visualizer.get_view_control()
-        self.__view_control.set_zoom(300)
         self.__view_control.translate(100,0)        
         
         self.R = rotx(-np.pi/3) @ rotz(np.pi/2)
@@ -69,7 +74,7 @@ class Visualizer():
 
             # control the view camera (must be after add_geometry())
             self.__view_control.translate(40,0)
-            self.__view_control.set_zoom(0.3)
+            self.__view_control.set_zoom(self.zoom)
 
             self.__visualizer.update_renderer()
             self.__visualizer.poll_events()
@@ -78,8 +83,9 @@ class Visualizer():
         # self.__visualizer.capture_screen_image(path)
 
     def __semantics_to_colors(self, semantics):
+        # default color is black to hide outscreen points
         colors = np.zeros((semantics.shape[0], 3))
-        return colors
+
         for id in trainId2label:
             label = trainId2label[id]
             if id == 255 or id == -1:
@@ -87,7 +93,7 @@ class Visualizer():
 
             color = label.color
             indices = semantics == id
-            colors[indices] = color
+            colors[indices] = (color[0]/255, color[1]/255, color[2]/255)
 
         return colors
 

@@ -32,7 +32,7 @@ def main(args):
         calib_root=args.calib_path
     )
 
-    visualizer = Visualizer()
+    visualizer = Visualizer(args.mode)
 
     frames = []
     frame_shape = (750, 900)
@@ -46,14 +46,12 @@ def main(args):
         input_image = preprocessing_kitti(image)
         semantic = bisenetv2(input_image)
         semantic = postprocessing(semantic)
-        # print(semantic.shape, image.shape)
         
-        pointcloud = clip_pointcloud(pointcloud)
         painted_pointcloud = painter.paint(pointcloud, semantic, calib)
+    
         if args.mode == '3d':
             visualizer.visuallize_pointcloud(painted_pointcloud, blocking=False)
-            # visualizer.visuallize_pointcloud(pointcloud, blocking=True)
-
+    
         else:
             if args.mode == 'img':
                 color_image = visualizer.get_colored_image(image, semantic)
@@ -88,9 +86,11 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--video_path', type=str, 
-    default='Videos/2/2011_09_26_drive_0009_sync/2011_09_26/2011_09_26_drive_0009_sync',)
+    # default='Videos/2/2011_09_26_drive_0009_sync/2011_09_26/2011_09_26_drive_0009_sync',)
+    default='Videos/1/2011_09_26/2011_09_26_drive_0048_sync',)
     parser.add_argument('--calib_path', type=str, 
-    default='Videos/2/2011_09_26_calib/2011_09_26',)
+    # default='Videos/2/2011_09_26_calib/2011_09_26',)
+    default='Videos/1/2011_09_26_calib/2011_09_26',)
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--save_path', type=str, default='Videos',)
     parser.add_argument('--mode', type=str, default='3d', choices=['img', '2d', '3d'], 

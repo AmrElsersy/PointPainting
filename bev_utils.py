@@ -66,8 +66,8 @@ def pointcloud_to_bev(pointcloud):
 
 def clip_pointcloud(pointcloud):
 
-    mask = np.where((pointcloud[:, 0] >= boundary["minX"]) & (pointcloud[:,0] <= boundary["maxX"])
-                    # (pointcloud[:, 1] >= boundary["minY"]) & (pointcloud[:,1] <= boundary["maxY"])
+    mask = np.where((pointcloud[:, 0] >= boundary["minX"]) & (pointcloud[:,0] <= boundary["maxX"]) & 
+                    (pointcloud[:, 1] >= boundary["minY"]) & (pointcloud[:,1] <= boundary["maxY"])
                     # (pointcloud[:, 2] >= boundary["minZ"]) & (pointcloud[:,2] <= boundary["maxZ"])
     )
 
