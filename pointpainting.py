@@ -55,9 +55,8 @@ class PointPainter():
         projected_points = projected_points.astype(np.int32)
 
         ### Filter 
-        # index of background value in format (x,y)
-        # filter = np.where(semantic == 255) # 2 np.array .. 1 for x & 1 for y
-        # filter = np.array([filter[0][0], filter[0][1]]).reshape(2,)
+        # filter is the index that contains background value (255) to be colorless
+        # semantic map dosn't garentee that it has value of 255 so we set [0,0] index to 255
         semantic[0,0] = 255
         filter = 0
 
@@ -72,7 +71,6 @@ class PointPainter():
         projected_points[x_mask] = filter
         projected_points[y_mask] = filter
         projected_points[neg_mask] = filter
-        print(projected_points[x_mask])
 
         # semantic channel that has class for each point 
         semantic_channel = np.zeros((N,1), dtype=np.float32)
@@ -86,8 +84,8 @@ class PointPainter():
         #     semantic_channel[i] = semantic[y,x]
 
         t = time.time() - t1
-        print('time', t)
-        print(np.unique(semantic_channel, return_counts=True))
+        # print('time', t)
+        # print(np.unique(semantic_channel, return_counts=True))
 
         painted_pointcloud = np.hstack((pointcloud[:,:3], semantic_channel)) # (N, 4)
         return painted_pointcloud

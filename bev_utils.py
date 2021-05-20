@@ -21,6 +21,8 @@ descretization_z = 1 / float(np.abs(boundary['maxZ'] - boundary['minZ']))
 # =========================== BEV RGB Map ==================================
 
 def pointcloud_to_bev(pointcloud):
+    assert pointcloud.shape[1] == 4
+    
     pointcloud = clip_pointcloud(pointcloud)
 
     # sort by z ... to get the maximum z when using unique 
@@ -28,19 +30,20 @@ def pointcloud_to_bev(pointcloud):
     z_indices = np.argsort(pointcloud[:,2])
     pointcloud = pointcloud[z_indices]
 
-    n_points = pointcloud.shape[0]
-
     MAP_HEIGHT = BEV_HEIGHT + 1
     MAP_WIDTH  = BEV_WIDTH  + 1
 
     height_map    = np.zeros((MAP_HEIGHT, MAP_WIDTH)) # max z
     intensity_map = np.zeros((MAP_HEIGHT, MAP_WIDTH)) # intensity (contains reflectivity or 1 if not supported)
     density_map   = np.zeros((MAP_HEIGHT, MAP_WIDTH)) # density of the mapped 3D points to a the pixel
+    semantic_map  = np.ones((MAP_HEIGHT, MAP_WIDTH)) * 255 # semantic map default value 255 (which is background value) 
 
     # shape = (n_points, 1)
     x_bev = np.int_((BEV_HEIGHT)  - pointcloud[:, 0] * descretization_x )
     y_bev = np.int_((BEV_WIDTH/2) - pointcloud[:, 1] * descretization_y)
     z_bev = pointcloud[:, 2] 
+    semantic_bev = pointcloud[:, 3]
+    # print('semantic bev', np.unique(semantic_bev, return_counts=True))
     
     # shape = (n_points, 2)
     xy_bev = np.stack((x_bev, y_bev), axis=1)
@@ -60,8 +63,10 @@ def pointcloud_to_bev(pointcloud):
     # density of points in each pixel
     density_map[xy_bev_unique[:,0], xy_bev_unique[:,1]] = np.minimum(1, np.log(counts + 1)/np.log(64) )
 
+    semantic_map[xy_bev_unique[:,0], xy_bev_unique[:,1]] = semantic_bev[indices]
+
     # stack the BEV channels along 3rd axis
-    BEV = np.dstack((intensity_map, height_map, density_map))
+    BEV = np.dstack((intensity_map, height_map, density_map, semantic_map))
     return BEV
 
 def clip_pointcloud(pointcloud):

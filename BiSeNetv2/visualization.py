@@ -92,11 +92,6 @@ class KittiVisualizer:
         cv2.imshow("total_image", image)
         self.__show_2D()
 
-    
-    def visualize_semantic_bev(self, image, semantic, pointcloud):
-        image = self.add_semantic_to_image(image, semantic)
-        bev = pointcloud_to_bev(pointcloud)
-
     def semantic_to_color(self, semantic):
         r = np.zeros((semantic.shape[:2])).astype(np.uint8)
         g = np.zeros((semantic.shape[:2])).astype(np.uint8)
@@ -104,13 +99,8 @@ class KittiVisualizer:
 
         for key in trainId2label:
             label = trainId2label[key]
-            # print(label)
             if key == 255 or key == -1:
                 continue
-            # if label.trainId == 255:
-            #     continue
-            
-            # id = label.trainId
             id = key
             color = label.color
             indices = semantic == id

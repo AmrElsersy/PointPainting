@@ -101,27 +101,31 @@ class Visualizer():
         self.__visualizer.destroy_window()
 
     def get_scene_2D(self, image, pointcloud, calib=None, visualize=False):
-        bev = pointcloud_to_bev(pointcloud)
-        # print(bev.shape)
+        bev = pointcloud_to_bev(pointcloud) # (600,600,4)
+        bev = self.__bev_to_colored_bev(bev)
+
         scene_width = self.scene_2D_width        
         image_h, image_w = image.shape[:2]
         bev_h, bev_w = bev.shape[:2]
 
-        # print(_image.shape, _bev.shape)
-
         new_image_height = int(image_h * scene_width / image_w)
         new_bev_height = int(bev_h * scene_width / bev_w)
 
-        bev   = cv2.resize(bev,   (scene_width, new_bev_height) )
-        image = cv2.resize(image, (scene_width, new_image_height) )
+        bev   = cv2.resize(bev,   (scene_width, new_bev_height), interpolation=cv2.INTER_NEAREST)
+        image = cv2.resize(image, (scene_width, new_image_height))
 
         image_and_bev = np.zeros((new_image_height + new_bev_height, scene_width, 3), dtype=np.uint8)
 
         image_and_bev[:new_image_height, :, :] = image
         image_and_bev[new_image_height:, :, :] = bev
 
+        cv2.namedWindow('scene')
+        def print_img(event,x,y,flags,param):
+            # if event == cv2.EVENT_LBUTTONDOWN:
+                print(image_and_bev[y,x])
+        cv2.setMouseCallback('scene', print_img)
         if visualize:
-            cv2.imshow("scene 2D", image_and_bev)
+            cv2.imshow("scene", image_and_bev)
         return image_and_bev
 
     def get_colored_image(self, image, semantic, visualize=False):
@@ -132,15 +136,19 @@ class Visualizer():
         return color_image
 
     def __bev_to_colored_bev(self, bev):
-    
-        bev = (bev * 255).astype(np.uint8)
+        semantic_map = bev[:,:,3]
+        shape = semantic_map.shape[:2]
+        color_map = np.zeros((shape[0], shape[1], 3))
 
-        # minZ = BEVutils.boundary["minZ"]
-        # maxZ = BEVutils.boundary["maxZ"]
-        # height_map = 255 - 255 * (height_map - minZ) / (maxZ - minZ) 
-        # bev = np.dstack((intensity_map, height_map, density_map))
+        for id in trainId2label:
+            label = trainId2label[id]
+            if id == 255 or id == -1:
+                continue
 
-        return bev
+            color = label.color
+            color_map[semantic_map == id] = color[2], color[1], color[0]
+
+        return color_map
 
 
 

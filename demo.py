@@ -53,22 +53,20 @@ def main(args):
             visualizer.visuallize_pointcloud(painted_pointcloud, blocking=False)
     
         else:
+            color_image = visualizer.get_colored_image(image, semantic)
             if args.mode == 'img':
-                color_image = visualizer.get_colored_image(image, semantic)
                 frames.append(color_image)
                 cv2.imshow('color_image', color_image)
             elif args.mode == '2d':
-                scene_2D = visualizer.get_scene_2D(image, pointcloud, calib)
+                scene_2D = visualizer.get_scene_2D(color_image, painted_pointcloud, calib)
                 frames.append(scene_2D)
-                cv2.imshow('scene', scene_2D)       
-            if cv2.waitKey(0) == 27:
-                cv2.destroyAllWindows()
-                break
+                # cv2.imshow('scene', scene_2D)       
+            # if cv2.waitKey(0) == 27:
+            #     cv2.destroyAllWindows()
+            #     break
 
         avg_time += (time.time()-t1)
         print(f'{i} sample')
-        # if i == 10:
-        #     break
 
     # Time & FPS
     avg_time /= len(video)
@@ -86,11 +84,11 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--video_path', type=str, 
-    # default='Videos/2/2011_09_26_drive_0009_sync/2011_09_26/2011_09_26_drive_0009_sync',)
-    default='Videos/1/2011_09_26/2011_09_26_drive_0048_sync',)
+    default='Videos/2/2011_09_26_drive_0009_sync/2011_09_26/2011_09_26_drive_0009_sync',)
+    # default='Videos/1/2011_09_26/2011_09_26_drive_0048_sync',)
     parser.add_argument('--calib_path', type=str, 
-    # default='Videos/2/2011_09_26_calib/2011_09_26',)
-    default='Videos/1/2011_09_26_calib/2011_09_26',)
+    default='Videos/2/2011_09_26_calib/2011_09_26',)
+    # default='Videos/1/2011_09_26_calib/2011_09_26',)
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--save_path', type=str, default='Videos',)
     parser.add_argument('--mode', type=str, default='3d', choices=['img', '2d', '3d'], 
