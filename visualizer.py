@@ -48,12 +48,12 @@ class Visualizer():
 
         opt = self.__visualizer.get_render_option()   
         opt.background_color = np.asarray([0, 0, 0])
-        self.zoom = 0.4 # smaller is zoomer
+        self.zoom = 0.3 # smaller is zoomer
 
         self.__view_control = self.__visualizer.get_view_control()
-        self.__view_control.translate(100,0)        
-        
-        self.R = rotx(-np.pi/3) @ rotz(np.pi/2)
+        self.__view_control.translate(30,0)
+
+        self.R = rotx(-np.pi/2.5) @ rotz(np.pi/2)
 
     def visuallize_pointcloud(self, pointcloud, blocking = False):
 
@@ -73,14 +73,14 @@ class Visualizer():
             self.__visualizer.add_geometry(self.__pcd)
 
             # control the view camera (must be after add_geometry())
-            self.__view_control.translate(40,0)
+            # self.__view_control.translate(30,0)
             self.__view_control.set_zoom(self.zoom)
 
             self.__visualizer.update_renderer()
             self.__visualizer.poll_events()
         
-        # save screenshot
-        # self.__visualizer.capture_screen_image(path)
+        screenshot = self.__visualizer.capture_screen_float_buffer()
+        return (np.array(screenshot)*255).astype(np.uint8)[:,:,::-1]
 
     def __semantics_to_colors(self, semantics):
         # default color is black to hide outscreen points

@@ -3,7 +3,7 @@ import numpy as np
 # =========================  Config ===============================
 boundary = {
     "minX": 0,
-    "maxX": 100,
+    "maxX": 50,
     "minY": -25,
     "maxY": 25,
     "minZ": -2.73,
@@ -22,7 +22,6 @@ descretization_z = 1 / float(np.abs(boundary['maxZ'] - boundary['minZ']))
 
 def pointcloud_to_bev(pointcloud):
     assert pointcloud.shape[1] == 4
-    
     pointcloud = clip_pointcloud(pointcloud)
 
     # sort by z ... to get the maximum z when using unique 
@@ -63,6 +62,8 @@ def pointcloud_to_bev(pointcloud):
     # density of points in each pixel
     density_map[xy_bev_unique[:,0], xy_bev_unique[:,1]] = np.minimum(1, np.log(counts + 1)/np.log(64) )
 
+    # same as depth .. assign each pixel in the semantic channel to its semantic value by indices
+    # indices is considered the index of heighst pixel semantic (since pointcloud is sorted by height)
     semantic_map[xy_bev_unique[:,0], xy_bev_unique[:,1]] = semantic_bev[indices]
 
     # stack the BEV channels along 3rd axis
