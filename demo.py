@@ -15,6 +15,10 @@ from pointpainting import PointPainter
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
 
+def time_synchronized():
+    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    return time.time()
+
 def main(args):
     # Semantic Segmentation
     bisenetv2 = BiSeNetV2()
@@ -34,23 +38,29 @@ def main(args):
     visualizer = Visualizer(args.mode)
 
     frames = []
-    if args.mode == '3d':
-        frame_shape = (1280, 720)
-    else:
+    if args.mode == '2d':
         frame_shape = (750, 900)
+    else:
+        frame_shape = (1280, 720)
     avg_time = 0
 
     for i in range(len(video)):
-        t1 = time.time()
         image, pointcloud, calib = video[i]
-        # print(image.shape, pointcloud.shape)
 
+
+        t1 = time_synchronized()
         input_image = preprocessing_kitti(image)
         semantic = bisenetv2(input_image)
         semantic = postprocessing(semantic)
-        
+        t2 = time_synchronized()
+
         painted_pointcloud = painter.paint(pointcloud, semantic, calib)
+        t3 = time_synchronized()
+
     
+        print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
+        print(f'Time of pointpainting = {1000 * (t3-t2)} ms')
+
         if args.mode == '3d':
             screenshot = visualizer.visuallize_pointcloud(painted_pointcloud, blocking=False)
             print(screenshot.shape)
@@ -63,11 +73,11 @@ def main(args):
             elif args.mode == '2d':
                 scene_2D = visualizer.get_scene_2D(color_image, painted_pointcloud, calib)
                 frames.append(scene_2D)
-                # cv2.imshow('scene', scene_2D)       
+                cv2.imshow('scene', scene_2D)       
 
-            # if cv2.waitKey(0) == 27:
-            #     cv2.destroyAllWindows()
-            #     break
+            if cv2.waitKey(0) == 27:
+                cv2.destroyAllWindows()
+                break
 
         # if i == 20:
         #     break
@@ -97,11 +107,14 @@ def boundary_3d_modify():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--video_path', type=str, 
-    default='Videos/2/2011_09_26_drive_0009_sync/2011_09_26/2011_09_26_drive_0009_sync',)
+    # default='Videos/2/2011_09_26_drive_0009_sync/2011_09_26/2011_09_26_drive_0009_sync',)
     # default='Videos/1/2011_09_26/2011_09_26_drive_0048_sync',)
+    default='Videos/1/2011_09_26_drive_0093_sync/2011_09_26')
+
     parser.add_argument('--calib_path', type=str, 
-    default='Videos/2/2011_09_26_calib/2011_09_26',)
-    # default='Videos/1/2011_09_26_calib/2011_09_26',)
+    # default='Videos/2/2011_09_26_calib/2011_09_26',)
+    default='Videos/1/2011_09_26_calib/2011_09_26',)
+
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--save_path', type=str, default='Videos',)
     parser.add_argument('--mode', type=str, default='3d', choices=['img', '2d', '3d'], 
