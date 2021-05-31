@@ -10,6 +10,9 @@ My unofficial implementation of [PointPainting Paper](https://arxiv.org/abs/1911
 #### Demo Video
 ![Demo](images/video.gif)
 
+##### Download the checkpoint
+[Download from Drive](https://drive.google.com/file/d/10-WxqSmyFKW72_1D-2vwu7BzUFlCOwgb/view?usp=sharing)
+Place it in "BiSeNetv2/checkpoints"
 
 #### Run Demo
 ```python
@@ -74,9 +77,39 @@ tensorboard --logdir PATH_TO_TENSORBOARD_FOLDER
 ![tensorboard](images/tensorboard.png)
 
 
+#### Folder structure    
+    ├── BiSeNetv2
+	    ├── checkpoints
+    		├── BiseNetv2_150.pth 	# path to model
+		    ├── tensorboard 		# path to save tensorboard events
+	    ├── data 					# path to kitti semantic dataset
+	        ├── KITTI
+              ├── testing
+	              ├── image_2
+              ├── training
+                ├── image_2
+                ├── instance
+                ├── semantic
+                ├── semantic_rgb
+	    
+        ├── utils
+          ├── label.py 				# label information (colors/ids/names)
+          ├── utils.py 				# utils functions
+        ├── train.py
+        ├── test.py
+        
+    ├── Kitti_sample				# 2 images & pointclouds & calib for testing (by demo.py)
+    ├── KittiCalibration.py 		# Stores Calibration file matrices 
+    ├── KittiVideo.py 				# Kitti Video Reader
+    ├── bev_utils.py 				# BEV algorithms
+    ├── demo.py 					# demo to test on 1 sample (Kitti_sample)
+    ├── demo_video.py 				# demo to test on Kitti Videos
+    ├── pointpainting.py 			# implementation of PointPainting
+    ├── visualizer.py 				# visualizer using opend3d & opencv
+
 
 ### References
-- My Review https://docs.google.com/document/d/1AtpbLfCl_uL5BpwlYDgpdM_2WtCIucDrRomFjSp6bhg/edit
+- My Review https://docs.google.com/document/d/1AtpbLfCl_uL5BpwlYDgpdM_2WtCIucDrRomFjSp6bhg/edit?usp=sharing
 
 - Semantic Seg Overview :https://medium.com/beyondminds/a-simple-guide-to-semantic-segmentation-effcf83e7e54 .. https://medium.com/swlh/understanding-multi-scale-representation-learning-architectures-in-convolutional-neural-networks-a71497d1e07c
 
