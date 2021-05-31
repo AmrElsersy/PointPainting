@@ -42,7 +42,7 @@ python3 demo_video.py --video_path PATH_TO_VIDEO --calib_path PATH_TO_CALIB --mo
 ![video_3d](images/video_3d.gif)
 
 
-#### BiSeNetv2
+## BiSeNetv2
 Realtime semantic segmentation on images
 
 ![model](images/model.png)
