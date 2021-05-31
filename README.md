@@ -62,8 +62,13 @@ I trained it on Colab and provided the [notebook](https://github.com/AmrElsersy/
 
 ![training](images/training.png)
 
+#### Test on KITTI Semantic
+```python
+cd BiSeNetv2
+python3 test.py 
+```
 
-#### KITTI Dataset
+### KITTI Dataset
 Semantic KITTI dataset contains 200 images for training & 200 for testing <br>
 Download it from [KITTI website](http://www.cvlibs.net/datasets/kitti/eval_semseg.php?benchmark=semantics2015)
 
