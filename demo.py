@@ -69,12 +69,12 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image_path', type=str);
-    parser.add_argument('--pointcloud_path', type=str);
-    parser.add_argument('--calib_path', type=str);
+    parser.add_argument('--image_path', type=str, default='Kitti_sample/image_2/000038.png');
+    parser.add_argument('--pointcloud_path', type=str, default='Kitti_sample/velodyne/000038.bin');
+    parser.add_argument('--calib_path', type=str, default='Kitti_sample/calib/000038.txt');
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth',)
     parser.add_argument('--save_path', type=str, default='results',)
-    parser.add_argument('--mode', type=str, default='3d', choices=['2d', '3d'],
+    parser.add_argument('--mode', type=str, default='2d', choices=['2d', '3d'],
     help='visualization mode .. img is semantic image .. 2d is semantic + bev .. 3d is colored pointcloud')
 
     args = parser.parse_args()
