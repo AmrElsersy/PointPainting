@@ -2,7 +2,7 @@
 [![Made withPytorch](https://img.shields.io/badge/Made%20with-pytorch-ee4c2c?style=for-the-badge&logo=pytorch)](https://www.pytorch.org/)
 # PointPainting-Semantic-Segmentation
 
-My unofficial implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10150) for realtime pointcloud semantic segmentation painting (labeling each point with a class) based on semantic segmentation maps using [BiSeNetv2](https://arxiv.org/abs/1808.00897)
+My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10150) for realtime pointcloud semantic segmentation painting (labeling each point with a class) based on semantic segmentation maps using [BiSeNetv2](https://arxiv.org/abs/1808.00897) 
 
 #### Project
 
@@ -53,7 +53,7 @@ Realtime semantic segmentation on images
 ![model](images/model.png)
 
 Thanks to https://github.com/CoinCheung/BiSeNet for the implementation trained on CityScapes datasets.
-I used it and finetuned it on KITTI dataset
+I used it and finetuned it on KITTI dataset using Pytorch
 
 ### Training on KITTI dataset
 ```python
