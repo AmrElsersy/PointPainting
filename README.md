@@ -9,14 +9,14 @@ My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10
 - BiSeNetv2 model trained on KITTI dataset 
 - Implementation of the pointpainting fusion algorithm
 
-#### Demo Video
+### Demo Video
 ![Demo](images/video.gif)
 
-##### Download the checkpoint
+### Download the checkpoint
 [Download from Drive](https://drive.google.com/file/d/10-WxqSmyFKW72_1D-2vwu7BzUFlCOwgb/view?usp=sharing)
 Place it in "BiSeNetv2/checkpoints"
 
-#### Run Demo
+### Run Demo
 ```python
 python3 demo.py --image_path PATH_TO_IMAGE --pointcloud_path PATH_TO_POINTCLOUD --calib_path PATH_TO_CALIB --weights_path PATH_TO_MODEL_WEIGHTS
 
@@ -27,13 +27,12 @@ python3 demo.py
 
 ```python
 # add --mode 3d to see a 3d visualization of painted pointcloud
-python3 demo.py
 python3 demo.py --mode 3d
 ```
 ![output_3d_demo](images/3d.gif)
 
 
-#### Run Demo on Kitti Videos
+### Run Demo on Kitti Videos
 Kitti Provides sequential videos for testing, Download them from [Kitti Videos]() by downloading video data(left & pointclouds)(download from [synced+rectified data]) and calibs (download from [calibration])
 in the selected video
 
@@ -64,7 +63,7 @@ I trained it on Colab and provided the [notebook](https://github.com/AmrElsersy/
 
 ![training](images/training.png)
 
-#### Test on KITTI Semantic
+### Test on KITTI Semantic
 ```python
 cd BiSeNetv2
 python3 test.py 
