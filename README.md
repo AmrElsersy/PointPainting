@@ -4,6 +4,9 @@
 
 My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10150) for realtime pointcloud semantic segmentation painting (labeling each point with a class) based on semantic segmentation maps using [BiSeNetv2](https://arxiv.org/abs/1808.00897) 
 
+![pointpainting](images/pointpainting.png)
+
+
 #### Project
 
 - BiSeNetv2 model trained on KITTI dataset 
