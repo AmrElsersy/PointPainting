@@ -17,7 +17,9 @@ My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10
 
 ### Download the checkpoint
 [Download from Drive](https://drive.google.com/file/d/10-WxqSmyFKW72_1D-2vwu7BzUFlCOwgb/view?usp=sharing)
-Place it in "BiSeNetv2/checkpoints"
+Place it in "BiSeNetv2/checkpoints" <br>
+**Important Note**
+The file you will download will have the name "BiseNetv2_150.pth.tar", don't unzip it .. just rename it to be "BiseNetv2_150.pth"
 
 ### Run Demo
 ```python
