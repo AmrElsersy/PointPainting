@@ -51,9 +51,10 @@ def main(args):
 
     t1 = time_synchronized()
     input_image = preprocessing_kitti(image)
+    print(input_image.shape)
     semantic = bisenetv2(input_image)
-    semantic = postprocessing(semantic)
     t2 = time_synchronized()
+    semantic = postprocessing(semantic)
 
     painted_pointcloud = painter.paint(pointcloud, semantic, calib)
     t3 = time_synchronized()
