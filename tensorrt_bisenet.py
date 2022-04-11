@@ -102,13 +102,21 @@ def tensorrt_inference(args):
     cuda.memcpy_htod_async(input_device_memory, input_host_memory, stream)
     t5 = time.time()
     # tensorrt runtime execution
-    context.execute_async(batch_size=1, bindings=bindings, stream_handle=stream.handle)
+    context.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
     t6 = time.time()
     # transfer output device memory to host memory
     cuda.memcpy_dtoh_async(output_host_memory, output_device_memory, stream)
+
     t7 = time.time()
     # synchronize
     stream.synchronize()
+
+    output = output_host_memory.reshape(cuda_engine.get_binding_shape(OUTPUT_BINDING))
+    t8 = time.time()
+
+    # postprocessing and visualization
+    semantic = postprocessing(torch.from_numpy(output))
+    t9 = time.time()
 
     print("allocate input ", (t2-t1)*1000, 'ms')
     print("allocate output ", (t3-t2)*1000, 'ms')
@@ -116,12 +124,10 @@ def tensorrt_inference(args):
     print("host to device input ", (t5-t4)*1000, 'ms')
     print("inference ", (t6-t5)*1000, 'ms')
     print("device to host output", (t7-t6)*1000, 'ms')
-    print("total ", (t7-t3)*1000, 'ms')
+    print("reshape output ", (t8-t7)*1000, 'ms')
+    print("postprocessing ", (t9-t8)*1000, 'ms')
+    print("total ", (t9-t3)*1000, 'ms')
 
-    output = output_host_memory.reshape(cuda_engine.get_binding_shape(OUTPUT_BINDING))
-
-    # postprocessing and visualization
-    semantic = postprocessing(torch.from_numpy(output))
     visualizer = Visualizer('2d')
     semantic = visualizer.get_colored_image(image, semantic)
     print(semantic.shape)    
