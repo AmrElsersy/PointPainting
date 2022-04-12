@@ -86,6 +86,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(args)
+    args.image_path = 'Kitti_sample/image_2/000031.png'
+    main(args)
 
 
 

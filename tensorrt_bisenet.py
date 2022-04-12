@@ -182,7 +182,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_path', type=str, default='Kitti_sample/image_2/000038.png')
     parser.add_argument('--onnx_path', type=str, default='bisenet.onnx')
-    parser.add_argument('--engine_path', type=str, default='serialized_cuda_engine.trt')
+    # parser.add_argument('--engine_path', type=str, default='serialized_cuda_engine.trt')
+    parser.add_argument('--engine_path', type=str, default='/home/amrelsersy/pointpainting_tensorrt/bisenet_tensorrt.trt')
     parser.add_argument('--data_path', type=str, default='data/KITTI/testing/image_2')
     args = parser.parse_args()
 

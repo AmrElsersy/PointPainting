@@ -1,8 +1,12 @@
+checkpoints/
+data/
 Cityscapes/
 KITTI/
 __pycache__/
+*.trt
 *.pth
 *.jpg
+.vscode/
 tensorboard/
 Videos/
 # .ipynb_checkpoints/
