@@ -15,7 +15,10 @@ link_directories(/usr/local/cuda-11.1/lib64)
 
 # OpenCV
 find_package(OpenCV REQUIRED)
-include_directories( ${OpenCV_INCLUDE_DIRS})
+include_directories(${OpenCV_INCLUDE_DIRS})
+link_directories(${OpenCV_LIBRARY_DIRS})
+add_definitions(${OpenCV_DEFINITIONS})
+
 
 # LAYER PLUGIN LIB
 # cuda_add_library(layerplugin SHARED ${PROJECT_SOURCE_DIR}/layers/yololayer.cu)
@@ -24,4 +27,10 @@ include_directories( ${OpenCV_INCLUDE_DIRS})
 add_executable(convert_onnx_to_engine ${PROJECT_SOURCE_DIR}/convert_onnx_to_engine.cpp)
 add_executable(main ${PROJECT_SOURCE_DIR}/main.cpp)
 target_link_libraries(convert_onnx_to_engine nvinfer nvonnxparser cudart)
-target_link_libraries(main nvinfer nvonnxparser cudart)
+target_link_libraries(main nvinfer nvonnxparser cudart ${OpenCV_LIBRARIES} ${CUDA_LIBRARIES})
+
+# target_link_libraries(point_pillars_lib
+# ${CUDA_CUBLAS_LIBRARIES}
+# ${CUDA_curand_LIBRARY}
+# gpu_point_pillars_lib
+# )
