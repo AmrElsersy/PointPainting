@@ -3,7 +3,13 @@
 #include <NvInfer.h>
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
-#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
+#include <cudaProfiler.h>
+#include <cuda_profiler_api.h>
+#include <cuda.h>
+
+#include <chrono>
+#include "argmax_cuda.h"
 
 #define INPUT_BINDING_INDEX 0
 #define OUTPUT_BINDING_INDEX 1
@@ -43,8 +49,12 @@ class BiseNetTensorRT
 
         // allocate memory for input/output bindings
         this->AllocateMemory();
-
+        // create context for execution
         this->context = this->cudaEngine->createExecutionContext();
+
+        // allocate memory for preprocessed image
+        this->resizeShape = cv::Size(1024, 512);
+        this->NCHW_preprocessed_buffer.resize(std::size_t(resizeShape.width * resizeShape.height));
     }    
     public: ~BiseNetTensorRT()
     {
@@ -58,57 +68,86 @@ class BiseNetTensorRT
     }
     public: void Inference(cv::Mat image)
     {
-        // preprocessing
-        image = this->PreProcessing(image);
-
-        // flatten cv::Mat to array
-        float *flattenImage = (float *)image.data;
-
-        // copy the flatten image to page-lock(host) input memory
-        memcpy((float *)this->hostInputMemory, flattenImage, this->inputSizeBytes);
-
+        // preprocessing transfer the image data to the hostInputMemory
+        this->PreProcessing(image);
+        
         // copy input from host memory to device memroy
         cudaMemcpyAsync(this->deviceInputMemory, this->hostInputMemory, 
                         this->inputSizeBytes, cudaMemcpyHostToDevice, 
                         *this->stream);
 
+        for (auto b: bindingBuffers)
+            std::cout << b << " ";
+            std::cout << std::endl;
+
         // TensorRT async execution through cuda context
         this->context->enqueueV2(this->bindingBuffers.data(), *this->stream, nullptr);
 
-        // copy output from device memory to host memory
-        cudaMemcpyAsync(this->hostOutputMemory, this->deviceOutputMemory,
-                        this->outputSizeBytes, cudaMemcpyDeviceToHost, 
-                        *this->stream);
-
+        // shapres input  (1, 3, 512, 1024)  output  (1, 19, 512, 1024)
         cudaStreamSynchronize(*stream);
-        
-        // convert output in host memory to cv::Mat
-        // cv::Mat outputImage;
-        // outputImage.data = new uchar(this->outputSizeBytes);
-        // memcpy(outputImage.data, (uchar *)this->hostOutputMemory, this->outputSizeBytes);
 
         // Post processing
+        // output of argmax is (512, 1024)
+        argmax(this->deviceOutputMemory, this->deviceArgMaxMemory);
+
+        // copy output from device memory to host memory
+        // cudaMemcpyAsync(this->hostOutputMemory, this->deviceOutputMemory,
+        //                 this->outputSizeBytes, cudaMemcpyDeviceToHost, 
+        //                 *this->stream);
+        cudaMemcpy(this->hostOutputMemory, this->deviceArgMaxMemory, this->outputSizeBytes, cudaMemcpyDeviceToHost);
+
+        // convert output in host memory to cv::Mat
+        cv::Mat outputImage(this->resizeShape, CV_32FC3, this->hostOutputMemory);
 
         // visualization
+        cv::imshow("outputImage", outputImage);
+        cv::waitKey(0);
     }
-    public: cv::Mat PreProcessing(cv::Mat _image)
+    public: void PreProcessing(cv::Mat _image)
     {
         cv::Mat resized;
-        cv::resize(_image, resized, cv::Size(1024, 512));
+        auto t1 = std::chrono::system_clock::now();
 
-        cv::Mat flattenImage;
-        resized.convertTo(flattenImage, CV_32FC3, 1.f/255.f);
-        return flattenImage;
+        cv::resize(_image, resized, this->resizeShape);
 
-        /* We may change the order of dims in the input array, it must be at some format ex: NHWC
-            std::vector< cv::cuda::GpuMat > chw;
-                for (size_t i = 0; i < channels; ++i)
-                {
-                    chw.emplace_back(cv::cuda::GpuMat(input_size, CV_32FC1, gpu_input + i * input_width * input_height));
-                }
-                cv::cuda::split(flt_image, chw);
+        auto t2 = std::chrono::system_clock::now();
+        // resized.convertTo(resized, CV_32FC3, 1.f/255.f);
+
+
+        //TensorRT requires your image data to be in NCHW order. But OpenCV reads it in NHWC order.
+        // std::vector<cv::Mat> chw;
+        // auto t3 = std::chrono::system_clock::now();
+        // for (size_t n = 0; n < 3; ++n)
+        //     chw.emplace_back(cv::Mat(this->resizeShape, CV_32FC1, 
+        //         this->NCHW_preprocessed_buffer.data() + n * this->resizeShape.width * this->resizeShape.height));
+        // auto t4 = std::chrono::system_clock::now();
+        // cv::split(resized, chw);
+        // auto t5 = std::chrono::system_clock::now();
+
+        auto width = this->resizeShape.width;
+        auto height = this->resizeShape.height;
+        auto size = height * width;
+
+        for (unsigned j = 0, volChl = height * width; j < height; ++j)
+        {
+            for( unsigned k = 0; k < width; ++ k)
+            {
+                cv::Vec3b bgr = resized.at<cv::Vec3b>(j,k);
+                hostInputMemory[0 * volChl + j * width + k] = (2.0 / 255.0) * float(bgr[2]) - 1.0;
+                hostInputMemory[1 * volChl + j * width + k] = (2.0 / 255.0) * float(bgr[1]) - 1.0;
+                hostInputMemory[2 * volChl + j * width + k] = (2.0 / 255.0) * float(bgr[0]) - 1.0;
             }
-        */
+        }
+
+        auto t3 = std::chrono::system_clock::now();
+
+#if 1
+        std::cout << "resize time = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
+        std::cout << "/255 time = " << std::chrono::duration<double>(t3-t2).count() * 1e3 << " ms" << std::endl;
+        // std::cout << "chw time = " << std::chrono::duration<double>(t4-t3).count() * 1e3 << " ms" << std::endl;
+        // std::cout << "split time = " << std::chrono::duration<double>(t5-t4).count() * 1e3 << " ms" << std::endl;
+        // std::cout << "total time = " << std::chrono::duration<double>(t5-t1).count() * 1e3 << " ms" << std::endl;
+#endif
     }
 
     public: void PostProcessing()
@@ -137,11 +176,9 @@ class BiseNetTensorRT
 
         std::cout << "input size bytes = " << this->inputSizeBytes << " .. count = " << this->inputSizeBytes / sizeof(float) << std::endl;
 
-        std::cout << "before input memories: "<< this->hostInputMemory << " . " << this->deviceInputMemory << std::endl;
-
         // allocate page-lock memory
-        cudaHostAlloc(this->hostInputMemory, this->inputSizeBytes, cudaHostAllocDefault);
-        cudaMalloc(this->deviceInputMemory, this->inputSizeBytes);
+        cudaHostAlloc((void**)&this->hostInputMemory, this->inputSizeBytes, cudaHostAllocDefault);
+        cudaMalloc((void**)&this->deviceInputMemory, this->inputSizeBytes);
 
         std::cout << "input memories: "<< this->hostInputMemory << " . " << this->deviceInputMemory << std::endl;
 
@@ -158,14 +195,17 @@ class BiseNetTensorRT
         std::cout << "output size bytes = " << this->outputSizeBytes << " .. count = " << this->outputSizeBytes / sizeof(float) << std::endl;
 
         // allocate page-lock memory & device memory
-        cudaHostAlloc(this->hostOutputMemory, this->outputSizeBytes, cudaHostAllocDefault);
-        cudaMalloc(this->deviceInputMemory, this->outputSizeBytes);
+        cudaHostAlloc((void**)&this->hostOutputMemory, this->outputSizeBytes, cudaHostAllocDefault);
+        cudaMalloc((void**)&this->deviceOutputMemory, this->outputSizeBytes);
 
-        std::cout << "output memories: " << this->hostInputMemory << " . " << this->deviceInputMemory << std::endl;
+        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(float);
+        cudaMalloc((void**)&this->deviceArgMaxMemory, this->argmaxSizeBytes);
+
+        std::cout << "output memories: " << this->hostOutputMemory << " . " << this->deviceOutputMemory << std::endl;
 
         // Bindings buffers of device for Cuda context execution
-        this->bindingBuffers.push_back(*this->deviceInputMemory);
-        this->bindingBuffers.push_back(*this->deviceOutputMemory);
+        this->bindingBuffers.push_back(this->deviceInputMemory);
+        this->bindingBuffers.push_back(this->deviceOutputMemory);
 
         // Stream for syncronization
         cudaStreamCreate(this->stream);
@@ -179,17 +219,22 @@ class BiseNetTensorRT
     private: std::vector<void *> bindingBuffers;
 
     // Page-lock and GPU device memory for input & output
-    private: void **hostInputMemory = nullptr;
-    private: void **deviceInputMemory = nullptr;
-    private: void **hostOutputMemory = nullptr;
-    private: void **deviceOutputMemory = nullptr;
+    private: float *hostInputMemory = nullptr;
+    private: float *deviceInputMemory = nullptr;
+    private: float *hostOutputMemory = nullptr;
+    private: float *deviceOutputMemory = nullptr;
+    private: float *deviceArgMaxMemory = nullptr;
 
     // Size of input & output for both host & device memories
     private: size_t inputSizeBytes = 1;
     private: size_t outputSizeBytes = 1;
+    private: size_t argmaxSizeBytes;
 
     // brief stream for asyncronization calls for memory copy & execution
     private: cudaStream_t *stream;
+
+    private: cv::Size resizeShape;
+    private: std::vector<float> NCHW_preprocessed_buffer;
 };
 
 
@@ -201,11 +246,12 @@ int main(int argc, char** argv)
 
     auto bisenet = BiseNetTensorRT(enginePath);   
 
-    std::string rootPath = "/home/amrelsersy/PointPainting/Kitti_sample/";
+    std::string rootPath = "/home/amrelsersy/PointPainting/Kitti_sample/image_2";
     for (const auto & entry : std::filesystem::directory_iterator(rootPath))
     {   
         std::string imagePath = entry.path().string();
         cv::Mat image = cv::imread(imagePath, cv::ImreadModes::IMREAD_COLOR);
+        std::cout << imagePath << " " << image.size() << std::endl;
         cv::imshow("image", image);
         if (cv::waitKey(0) == 27)
         {

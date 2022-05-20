@@ -29,7 +29,9 @@ def preprocessing_kitti(image):
         image = np.asarray(image)
 
     new_shape = (1024,512)
+    t = time.time()
     image = cv2.resize(image, new_shape)
+    print((time.time()-t) * 1000, ' ms')
     image = T.ToTensor()(image)
 
     image = image.unsqueeze(0).to(device)

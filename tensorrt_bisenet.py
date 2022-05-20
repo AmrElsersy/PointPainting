@@ -166,6 +166,8 @@ class TensorRT_Bisenet:
         print("reshape output ", (t9-t8)*1000, 'ms')
         print("total ", (t9-t3)*1000, 'ms')
 
+        print("shapres input ", self.cuda_engine.get_binding_shape(INPUT_BINDING), " output ", self.cuda_engine.get_binding_shape(OUTPUT_BINDING))
+
         return semantic
 
     def preprocessing_numpy(self, image):
