@@ -14,7 +14,7 @@
 #define INPUT_BINDING_INDEX 0
 #define OUTPUT_BINDING_INDEX 1
 
-class Logger : public nvinfer1::ILogger           
+class Logger : public nvinfer1::ILogger
 {
     void log(nvinfer1::ILogger::Severity severity, const char* msg) noexcept override
     {
@@ -37,7 +37,7 @@ class BiseNetTensorRT
 
         file.seekg(0, file.end);
         const int serializedSize = file.tellg();
-        file.seekg(0, file.beg);               
+        file.seekg(0, file.beg);
         std::vector<char> engineData(serializedSize);
         char *engineMemory = engineData.data();
         file.read(engineMemory, serializedSize);
@@ -55,7 +55,7 @@ class BiseNetTensorRT
         // allocate memory for preprocessed image
         this->resizeShape = cv::Size(1024, 512);
         this->NCHW_preprocessed_buffer.resize(std::size_t(resizeShape.width * resizeShape.height));
-    }    
+    }
     public: ~BiseNetTensorRT()
     {
         delete this->cudaEngine;
@@ -70,10 +70,10 @@ class BiseNetTensorRT
     {
         // preprocessing transfer the image data to the hostInputMemory
         this->PreProcessing(image);
-        
+
         // copy input from host memory to device memroy
-        cudaMemcpyAsync(this->deviceInputMemory, this->hostInputMemory, 
-                        this->inputSizeBytes, cudaMemcpyHostToDevice, 
+        cudaMemcpyAsync(this->deviceInputMemory, this->hostInputMemory,
+                        this->inputSizeBytes, cudaMemcpyHostToDevice,
                         *this->stream);
 
         for (auto b: bindingBuffers)
@@ -92,7 +92,7 @@ class BiseNetTensorRT
 
         // copy output from device memory to host memory
         // cudaMemcpyAsync(this->hostOutputMemory, this->deviceOutputMemory,
-        //                 this->outputSizeBytes, cudaMemcpyDeviceToHost, 
+        //                 this->outputSizeBytes, cudaMemcpyDeviceToHost,
         //                 *this->stream);
         cudaMemcpy(this->hostOutputMemory, this->deviceArgMaxMemory, this->outputSizeBytes, cudaMemcpyDeviceToHost);
 
@@ -103,6 +103,21 @@ class BiseNetTensorRT
         cv::imshow("outputImage", outputImage);
         cv::waitKey(0);
     }
+
+    void hwc_to_chw(cv::InputArray src, cv::OutputArray &dst)
+    {
+        std::vector<cv::Mat> channels;
+        cv::split(src, channels);
+
+        // Stretch one-channel images to vector
+        for (auto &img : channels) {
+            img = img.reshape(1, 1);
+        }
+
+        // Concatenate three vectors to one
+        cv::hconcat( channels, dst );
+    }
+
     public: void PreProcessing(cv::Mat _image)
     {
         cv::Mat resized;
@@ -118,7 +133,7 @@ class BiseNetTensorRT
         // std::vector<cv::Mat> chw;
         // auto t3 = std::chrono::system_clock::now();
         // for (size_t n = 0; n < 3; ++n)
-        //     chw.emplace_back(cv::Mat(this->resizeShape, CV_32FC1, 
+        //     chw.emplace_back(cv::Mat(this->resizeShape, CV_32FC1,
         //         this->NCHW_preprocessed_buffer.data() + n * this->resizeShape.width * this->resizeShape.height));
         // auto t4 = std::chrono::system_clock::now();
         // cv::split(resized, chw);
@@ -154,19 +169,19 @@ class BiseNetTensorRT
     {
 
     }
-    
+
     private: void AllocateMemory()
     {
         for (int i = 0; i < this->cudaEngine->getNbBindings(); i++)
             std::cout << this->cudaEngine->getBindingName(i) << " , ";
             std::cout << std::endl;
-        
+
         // allocate page-lock memory(host memory) & GPU device memory for input
-        // size of input bindings        
+        // size of input bindings
         nvinfer1::Dims inputDims = this->cudaEngine->getBindingDimensions(INPUT_BINDING_INDEX);
         size_t inputSizeBytes = 1;
         for (auto d : inputDims.d)
-        {   
+        {
             if (d == 0)
                 continue;
             this->inputSizeBytes *= d;
@@ -244,11 +259,11 @@ int main(int argc, char** argv)
     if (argc > 1)
         enginePath = argv[1];
 
-    auto bisenet = BiseNetTensorRT(enginePath);   
+    auto bisenet = BiseNetTensorRT(enginePath);
 
     std::string rootPath = "/home/amrelsersy/PointPainting/Kitti_sample/image_2";
     for (const auto & entry : std::filesystem::directory_iterator(rootPath))
-    {   
+    {
         std::string imagePath = entry.path().string();
         cv::Mat image = cv::imread(imagePath, cv::ImreadModes::IMREAD_COLOR);
         std::cout << imagePath << " " << image.size() << std::endl;
@@ -258,7 +273,7 @@ int main(int argc, char** argv)
             cv::destroyAllWindows();
             return 0;
         }
-        
+
         bisenet.Inference(image);
     }
     return 0;
