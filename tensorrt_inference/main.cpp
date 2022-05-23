@@ -7,9 +7,10 @@
 #include <cudaProfiler.h>
 #include <cuda_profiler_api.h>
 #include <cuda.h>
-
 #include <chrono>
-#include "argmax_cuda.h"
+
+#include "kernel_launch.h"
+#include "visualization.h"
 
 #define INPUT_BINDING_INDEX 0
 #define OUTPUT_BINDING_INDEX 1
@@ -47,20 +48,18 @@ class BiseNetTensorRT
 
         std::cout << "Loaded cuda engine from " << _enginePath << " at memory " << cudaEngine << std::endl;
 
-        // allocate memory for input/output bindings
-        this->AllocateMemory();
-        // create context for execution
-        this->context = this->cudaEngine->createExecutionContext();
-
         // allocate memory for preprocessed image
         this->resizeShape = cv::Size(1024, 512);
-        this->NCHW_preprocessed_buffer.resize(std::size_t(resizeShape.width * resizeShape.height));
+
+        // allocate memory for input/output bindings
+        this->AllocateMemory();
+
+        // create context for execution
+        this->context = this->cudaEngine->createExecutionContext();
     }
     public: ~BiseNetTensorRT()
     {
-        delete this->cudaEngine;
-        delete this->runtime;
-
+        cudaFree(this->deviceArgMaxMemory);
         cudaFree(this->deviceInputMemory);
         cudaFree(this->deviceOutputMemory);
         cudaFreeHost(this->hostInputMemory);
@@ -74,36 +73,29 @@ class BiseNetTensorRT
         // copy input from host memory to device memroy
         cudaMemcpyAsync(this->deviceInputMemory, this->hostInputMemory,
                         this->inputSizeBytes, cudaMemcpyHostToDevice,
-                        *this->stream);
-
-        for (auto b: bindingBuffers)
-            std::cout << b << " ";
-            std::cout << std::endl;
+                        this->stream);
 
         // TensorRT async execution through cuda context
-        this->context->enqueueV2(this->bindingBuffers.data(), *this->stream, nullptr);
-
         // shapres input  (1, 3, 512, 1024)  output  (1, 19, 512, 1024)
-        cudaStreamSynchronize(*stream);
+        this->context->enqueueV2(this->bindingBuffers.data(), this->stream, nullptr);
 
         // Post processing
         // output of argmax is (512, 1024)
-        argmax(this->deviceOutputMemory, this->deviceArgMaxMemory);
+        argmaxLaunchKernel(this->deviceOutputMemory, this->deviceArgMaxMemory, stream);
 
-        // copy output from device memory to host memory
-        // cudaMemcpyAsync(this->hostOutputMemory, this->deviceOutputMemory,
-        //                 this->outputSizeBytes, cudaMemcpyDeviceToHost,
-        //                 *this->stream);
-        cudaMemcpy(this->hostOutputMemory, this->deviceArgMaxMemory, this->outputSizeBytes, cudaMemcpyDeviceToHost);
+        cudaMemcpyAsync(this->hostOutputMemory, this->deviceArgMaxMemory, this->argmaxSizeBytes, cudaMemcpyDeviceToHost, stream);
+
+        cudaStreamSynchronize(stream);
 
         // convert output in host memory to cv::Mat
-        cv::Mat outputImage(this->resizeShape, CV_32FC3, this->hostOutputMemory);
+        cv::Mat outputImage(this->resizeShape, CV_32FC1, this->hostOutputMemory);
 
         // visualization
         cv::imshow("outputImage", outputImage);
-        cv::waitKey(0);
+        // cv::waitKey(0);
     }
 
+    //TensorRT requires your image data to be in NCHW order. But OpenCV reads it in NHWC order.
     void hwc_to_chw(cv::InputArray src, cv::OutputArray &dst)
     {
         std::vector<cv::Mat> channels;
@@ -111,63 +103,42 @@ class BiseNetTensorRT
 
         // Stretch one-channel images to vector
         for (auto &img : channels) {
+            std::cout << "before "<< img.size() << " " << img.rows << " " << img.cols << " " << img.channels() << std::endl;
             img = img.reshape(1, 1);
+            std::cout << "after "<< img.size() << " " << img.rows << " " << img.cols << " " << img.channels() << std::endl;
         }
 
         // Concatenate three vectors to one
         cv::hconcat( channels, dst );
+
+        std::cout << "dst "<< dst.size() << " " << dst.rows() << " " << dst.cols() << " " << dst.channels() << std::endl;
     }
 
     public: void PreProcessing(cv::Mat _image)
     {
-        cv::Mat resized;
+        cv::Mat resized, nchw;
         auto t1 = std::chrono::system_clock::now();
 
+        // resizing
         cv::resize(_image, resized, this->resizeShape);
 
+
         auto t2 = std::chrono::system_clock::now();
-        // resized.convertTo(resized, CV_32FC3, 1.f/255.f);
 
-
-        //TensorRT requires your image data to be in NCHW order. But OpenCV reads it in NHWC order.
-        // std::vector<cv::Mat> chw;
-        // auto t3 = std::chrono::system_clock::now();
-        // for (size_t n = 0; n < 3; ++n)
-        //     chw.emplace_back(cv::Mat(this->resizeShape, CV_32FC1,
-        //         this->NCHW_preprocessed_buffer.data() + n * this->resizeShape.width * this->resizeShape.height));
-        // auto t4 = std::chrono::system_clock::now();
-        // cv::split(resized, chw);
-        // auto t5 = std::chrono::system_clock::now();
-
-        auto width = this->resizeShape.width;
-        auto height = this->resizeShape.height;
-        auto size = height * width;
-
-        for (unsigned j = 0, volChl = height * width; j < height; ++j)
-        {
-            for( unsigned k = 0; k < width; ++ k)
-            {
-                cv::Vec3b bgr = resized.at<cv::Vec3b>(j,k);
-                hostInputMemory[0 * volChl + j * width + k] = (2.0 / 255.0) * float(bgr[2]) - 1.0;
-                hostInputMemory[1 * volChl + j * width + k] = (2.0 / 255.0) * float(bgr[1]) - 1.0;
-                hostInputMemory[2 * volChl + j * width + k] = (2.0 / 255.0) * float(bgr[0]) - 1.0;
-            }
-        }
+        this->hwc_to_chw(resized, nchw);
+        // image = image.astype(float) / 255
+        nchw.convertTo(nchw, CV_32FC1, 1.f/255.f);
 
         auto t3 = std::chrono::system_clock::now();
+        memcpy(this->hostInputMemory, (float*)nchw.data, this->inputSizeBytes);
+        // cudaMemcpy(this->hostInputMemory, (float*)nchw.data, this->inputSizeBytes, cudaMemcpyHostToHost);
+        auto t4 = std::chrono::system_clock::now();
 
 #if 1
         std::cout << "resize time = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
-        std::cout << "/255 time = " << std::chrono::duration<double>(t3-t2).count() * 1e3 << " ms" << std::endl;
-        // std::cout << "chw time = " << std::chrono::duration<double>(t4-t3).count() * 1e3 << " ms" << std::endl;
-        // std::cout << "split time = " << std::chrono::duration<double>(t5-t4).count() * 1e3 << " ms" << std::endl;
-        // std::cout << "total time = " << std::chrono::duration<double>(t5-t1).count() * 1e3 << " ms" << std::endl;
+        std::cout << "nchw time = " << std::chrono::duration<double>(t3-t2).count() * 1e3 << " ms" << std::endl;
+        std::cout << "copy time = " << std::chrono::duration<double>(t4-t3).count() * 1e3 << " ms" << std::endl;
 #endif
-    }
-
-    public: void PostProcessing()
-    {
-
     }
 
     private: void AllocateMemory()
@@ -206,14 +177,16 @@ class BiseNetTensorRT
             this->outputSizeBytes *= d;
         }
         this->outputSizeBytes *= sizeof(float);
+        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(float);
 
-        std::cout << "output size bytes = " << this->outputSizeBytes << " .. count = " << this->outputSizeBytes / sizeof(float) << std::endl;
+        std::cout << "output size bytes = " << this->outputSizeBytes 
+                  << " .. count = " << this->outputSizeBytes / sizeof(float) 
+                  << " .. argmax " << this->argmaxSizeBytes << " and count =" << this->argmaxSizeBytes/sizeof(float)
+                  << std::endl;
 
         // allocate page-lock memory & device memory
-        cudaHostAlloc((void**)&this->hostOutputMemory, this->outputSizeBytes, cudaHostAllocDefault);
+        cudaHostAlloc((void**)&this->hostOutputMemory, this->argmaxSizeBytes, cudaHostAllocDefault);
         cudaMalloc((void**)&this->deviceOutputMemory, this->outputSizeBytes);
-
-        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(float);
         cudaMalloc((void**)&this->deviceArgMaxMemory, this->argmaxSizeBytes);
 
         std::cout << "output memories: " << this->hostOutputMemory << " . " << this->deviceOutputMemory << std::endl;
@@ -223,7 +196,7 @@ class BiseNetTensorRT
         this->bindingBuffers.push_back(this->deviceOutputMemory);
 
         // Stream for syncronization
-        cudaStreamCreate(this->stream);
+        cudaStreamCreate(&this->stream);
     }
 
     private: nvinfer1::IRuntime *runtime;
@@ -246,10 +219,9 @@ class BiseNetTensorRT
     private: size_t argmaxSizeBytes;
 
     // brief stream for asyncronization calls for memory copy & execution
-    private: cudaStream_t *stream;
+    private: cudaStream_t stream;
 
     private: cv::Size resizeShape;
-    private: std::vector<float> NCHW_preprocessed_buffer;
 };
 
 
@@ -261,7 +233,7 @@ int main(int argc, char** argv)
 
     auto bisenet = BiseNetTensorRT(enginePath);
 
-    std::string rootPath = "/home/amrelsersy/PointPainting/Kitti_sample/image_2";
+    std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/testing/image_2";
     for (const auto & entry : std::filesystem::directory_iterator(rootPath))
     {
         std::string imagePath = entry.path().string();
@@ -273,8 +245,13 @@ int main(int argc, char** argv)
             cv::destroyAllWindows();
             return 0;
         }
-
+        
+        auto t1 = std::chrono::system_clock::now();
+        // do inference
         bisenet.Inference(image);
+        auto t2 = std::chrono::system_clock::now();
+        std::cout << "Inference = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
+
     }
     return 0;
 }

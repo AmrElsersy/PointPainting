@@ -20,17 +20,21 @@ link_directories(${OpenCV_LIBRARY_DIRS})
 add_definitions(${OpenCV_DEFINITIONS})
 
 
-# LAYER PLUGIN LIB
-# cuda_add_library(layerplugin SHARED ${PROJECT_SOURCE_DIR}/layers/yololayer.cu)
+include_directories(
+    ${CUDA_INCLUDE_DIRS}
+    ${TENSORRT_INCLUDE_DIRS}
+    include/
+)
+
+# source files includeing .cpp & .cu files
+file(GLOB_RECURSE SOURCE_FILES
+    cuda_kernels/*.cu
+    src/*.cpp
+)
 
 # EXECUTABLE
 add_executable(convert_onnx_to_engine ${PROJECT_SOURCE_DIR}/convert_onnx_to_engine.cpp)
-add_executable(main ${PROJECT_SOURCE_DIR}/main.cpp)
-target_link_libraries(convert_onnx_to_engine nvinfer nvonnxparser cudart)
-target_link_libraries(main nvinfer nvonnxparser cudart ${OpenCV_LIBRARIES} ${CUDA_LIBRARIES})
+cuda_add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/main.cpp ${SOURCE_FILES})
 
-# target_link_libraries(point_pillars_lib
-# ${CUDA_CUBLAS_LIBRARIES}
-# ${CUDA_curand_LIBRARY}
-# gpu_point_pillars_lib
-# )
+target_link_libraries(convert_onnx_to_engine nvinfer nvonnxparser cudart)
+target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser cudart ${OpenCV_LIBRARIES} ${CUDA_LIBRARIES} )

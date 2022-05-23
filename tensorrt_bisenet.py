@@ -174,8 +174,10 @@ class TensorRT_Bisenet:
         new_shape = (1024,512)
         image = cv2.resize(image, new_shape)
         image = image.astype(np.float32) / 255.0
+        print(image.shape)
         image = np.expand_dims(image, 0)
         image = image.transpose((0, 3, 1, 2))
+        print(image.shape)
         return image
 
     def postprocessing_numpy(self, pred):
