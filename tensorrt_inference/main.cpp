@@ -65,7 +65,7 @@ class BiseNetTensorRT
         cudaFreeHost(this->hostInputMemory);
         cudaFreeHost(this->hostOutputMemory);
     }
-    public: void Inference(cv::Mat image)
+    public: cv::Mat Inference(cv::Mat image)
     {
         // preprocessing transfer the image data to the hostInputMemory
         this->PreProcessing(image);
@@ -89,10 +89,7 @@ class BiseNetTensorRT
 
         // convert output in host memory to cv::Mat
         cv::Mat outputImage(this->resizeShape, CV_32FC1, this->hostOutputMemory);
-
-        // visualization
-        cv::imshow("outputImage", outputImage);
-        // cv::waitKey(0);
+        return outputImage;
     }
 
     //TensorRT requires your image data to be in NCHW order. But OpenCV reads it in NHWC order.
@@ -224,6 +221,11 @@ class BiseNetTensorRT
     private: cv::Size resizeShape;
 };
 
+cv::Mat global_image;
+void mouseHandler(int event,int x,int y, int flags,void* param)
+{
+    std::cout << x << ", " << y << "  =  " << global_image.at<float>(y,x) << std::endl;
+}
 
 int main(int argc, char** argv)
 {
@@ -232,6 +234,7 @@ int main(int argc, char** argv)
         enginePath = argv[1];
 
     auto bisenet = BiseNetTensorRT(enginePath);
+    auto visualizer = Visualizer();
 
     std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/testing/image_2";
     for (const auto & entry : std::filesystem::directory_iterator(rootPath))
@@ -239,18 +242,33 @@ int main(int argc, char** argv)
         std::string imagePath = entry.path().string();
         cv::Mat image = cv::imread(imagePath, cv::ImreadModes::IMREAD_COLOR);
         std::cout << imagePath << " " << image.size() << std::endl;
+        
+        auto t1 = std::chrono::system_clock::now();
+        // do inference
+        cv::Mat semantic = bisenet.Inference(image);
+        auto t2 = std::chrono::system_clock::now();
+        std::cout << "Inference = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
+
+        // visualization
+        cv::Mat coloredSemantic;
+        
+        visualizer.ConvertToSemanticMap(semantic, coloredSemantic);
+        std::cout << semantic.size() << " , channels " << semantic.channels() << std::endl;
+        std::cout << coloredSemantic.size() << " , channels " << coloredSemantic.channels() << std::endl;
+        
         cv::imshow("image", image);
+        cv::imshow("semantic", semantic);
+        cv::imshow("coloredSemantic", coloredSemantic);
+
+        global_image = semantic;
+        cv::imshow("semantic", semantic);
+        cv::setMouseCallback("semantic", mouseHandler, &semantic);
+        
         if (cv::waitKey(0) == 27)
         {
             cv::destroyAllWindows();
             return 0;
         }
-        
-        auto t1 = std::chrono::system_clock::now();
-        // do inference
-        bisenet.Inference(image);
-        auto t2 = std::chrono::system_clock::now();
-        std::cout << "Inference = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
 
     }
     return 0;
