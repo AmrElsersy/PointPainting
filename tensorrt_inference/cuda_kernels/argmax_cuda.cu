@@ -12,7 +12,7 @@
 
 // input size = (3, 512, 1024)
 // output size argmax is (512, 1024)
-__global__ void argmax_cuda(float *bisenet_output, int *argmax_output, int N)
+__global__ void argmax_cuda(float *bisenet_output, unsigned char *argmax_output, int N)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid >= N)
@@ -20,9 +20,9 @@ __global__ void argmax_cuda(float *bisenet_output, int *argmax_output, int N)
 
     // argmax_output[tid] = bisenet_output[tid];
     float max = -INFINITY;
-    int arg = -1;
+    unsigned char arg = -1;
 
-    for (int i = 0; i < CHANNELS; i++)
+    for (unsigned char i = 0; i < CHANNELS; i++)
     {
         int channel_i = bisenet_output[tid + i * (WIDTH * HEIGHT) ];
         if (channel_i > max)
@@ -35,10 +35,10 @@ __global__ void argmax_cuda(float *bisenet_output, int *argmax_output, int N)
     argmax_output[tid] = arg;
 }
 
-void verify_result(float *dev_bisenet_output, int *dev_argmax)
+void verify_result(float *dev_bisenet_output, unsigned char *dev_argmax)
 {
     float *host_bisenet = new float[WIDTH * HEIGHT * CHANNELS];
-    float *host_argmax = new int[WIDTH * HEIGHT];
+    unsigned char *host_argmax = new unsigned char[WIDTH * HEIGHT];
     float *result = new float[WIDTH * HEIGHT];
 
     cudaMemcpy(host_bisenet, dev_bisenet_output, WIDTH * HEIGHT * CHANNELS * sizeof(float), cudaMemcpyDeviceToHost);
@@ -46,8 +46,8 @@ void verify_result(float *dev_bisenet_output, int *dev_argmax)
 
     for (int i =0 ; i < WIDTH*HEIGHT; i++)
     {
-        float max = -INFINITY;
-        float arg = -1;
+        // float max = -INFINITY;
+        // unsigned char arg = -1;
 
         for (int c = 0; c < CHANNELS; c++)
         {
@@ -56,7 +56,7 @@ void verify_result(float *dev_bisenet_output, int *dev_argmax)
     }
 }
 
-void argmaxLaunchKernel(float *bisenet_output, int *argmax_output, cudaStream_t stream)
+void argmaxLaunchKernel(float *bisenet_output, unsigned char *argmax_output, cudaStream_t stream)
 {
     int N = WIDTH * HEIGHT;
     int threadsPerBlock = 256;

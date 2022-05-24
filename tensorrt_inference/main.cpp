@@ -88,7 +88,7 @@ class BiseNetTensorRT
         cudaStreamSynchronize(stream);
 
         // convert output in host memory to cv::Mat
-        cv::Mat outputImage(this->resizeShape, CV_32SC1, this->hostOutputMemory);
+        cv::Mat outputImage(this->resizeShape, CV_8UC1, this->hostOutputMemory);
         return outputImage;
     }
 
@@ -174,11 +174,11 @@ class BiseNetTensorRT
             this->outputSizeBytes *= d;
         }
         this->outputSizeBytes *= sizeof(float);
-        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(int);
+        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(uchar);
 
         std::cout << "output size bytes = " << this->outputSizeBytes 
                   << " .. count = " << this->outputSizeBytes / sizeof(float) 
-                  << " .. argmax " << this->argmaxSizeBytes << " and count =" << this->argmaxSizeBytes/sizeof(float)
+                  << " .. argmax " << this->argmaxSizeBytes << " and count =" << this->argmaxSizeBytes/sizeof(uchar)
                   << std::endl;
 
         // allocate page-lock memory & device memory
@@ -206,9 +206,9 @@ class BiseNetTensorRT
     // Page-lock and GPU device memory for input & output
     private: float *hostInputMemory = nullptr;
     private: float *deviceInputMemory = nullptr;
-    private: float *hostOutputMemory = nullptr;
     private: float *deviceOutputMemory = nullptr;
-    private: int *deviceArgMaxMemory = nullptr;
+    private: uchar *hostOutputMemory = nullptr;
+    private: uchar *deviceArgMaxMemory = nullptr;
 
     // Size of input & output for both host & device memories
     private: size_t inputSizeBytes = 1;
@@ -224,7 +224,7 @@ class BiseNetTensorRT
 cv::Mat global_image;
 void mouseHandler(int event,int x,int y, int flags,void* param)
 {
-    std::cout << x << ", " << y << "  =  " << global_image.at<float>(y,x) << std::endl;
+    std::cout << x << ", " << y << "  =  " << (int)global_image.at<uchar>(y,x) << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -255,13 +255,16 @@ int main(int argc, char** argv)
         visualizer.ConvertToSemanticMap(semantic, coloredSemantic);
         std::cout << semantic.size() << " , channels " << semantic.channels() << std::endl;
         std::cout << coloredSemantic.size() << " , channels " << coloredSemantic.channels() << std::endl;
-        
+
+        // just for visualization ,add 20 to brightness the image, as ids is [0-19] which is really dark
+        semantic.convertTo(semantic,CV_8UC1, 1, 20);
+
         cv::imshow("image", image);
         cv::imshow("semantic", semantic);
+        std::cout << "colored semantic type = " << coloredSemantic.type() << " " << image.type() <<  std::endl;
         cv::imshow("coloredSemantic", coloredSemantic);
 
         global_image = semantic;
-        cv::imshow("semantic", semantic);
         cv::setMouseCallback("semantic", mouseHandler, &semantic);
         
         if (cv::waitKey(0) == 27)

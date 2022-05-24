@@ -3,4 +3,4 @@
 #define CHANNELS 19
 #define DONT_CARE -1
 
-void argmaxLaunchKernel(float *bisenet_output, float *argmax_output, cudaStream_t stream);
+void argmaxLaunchKernel(float *bisenet_output, unsigned char *argmax_output, cudaStream_t stream);
