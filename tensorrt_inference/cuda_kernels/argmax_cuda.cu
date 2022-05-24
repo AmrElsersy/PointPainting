@@ -2,7 +2,7 @@
 #include <cudaProfiler.h>
 #include <cuda_profiler_api.h>
 #include <cuda.h>
- #include "device_launch_parameters.h"
+#include "device_launch_parameters.h"
 #include <math.h>
 
 #include <bits/stdc++.h>
