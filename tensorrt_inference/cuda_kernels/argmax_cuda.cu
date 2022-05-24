@@ -12,14 +12,14 @@
 
 // input size = (3, 512, 1024)
 // output size argmax is (512, 1024)
-__global__ void argmax_cuda(float *bisenet_output, float *argmax_output, int N)
+__global__ void argmax_cuda(float *bisenet_output, int *argmax_output, int N)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid >= N)
         return;
 
     // argmax_output[tid] = bisenet_output[tid];
-    int max = -INFINITY;
+    float max = -INFINITY;
     int arg = -1;
 
     for (int i = 0; i < CHANNELS; i++)
@@ -35,10 +35,10 @@ __global__ void argmax_cuda(float *bisenet_output, float *argmax_output, int N)
     argmax_output[tid] = arg;
 }
 
-void verify_result(float *dev_bisenet_output, float *dev_argmax)
+void verify_result(float *dev_bisenet_output, int *dev_argmax)
 {
     float *host_bisenet = new float[WIDTH * HEIGHT * CHANNELS];
-    float *host_argmax = new float[WIDTH * HEIGHT];
+    float *host_argmax = new int[WIDTH * HEIGHT];
     float *result = new float[WIDTH * HEIGHT];
 
     cudaMemcpy(host_bisenet, dev_bisenet_output, WIDTH * HEIGHT * CHANNELS * sizeof(float), cudaMemcpyDeviceToHost);
@@ -56,7 +56,7 @@ void verify_result(float *dev_bisenet_output, float *dev_argmax)
     }
 }
 
-void argmaxLaunchKernel(float *bisenet_output, float *argmax_output, cudaStream_t stream)
+void argmaxLaunchKernel(float *bisenet_output, int *argmax_output, cudaStream_t stream)
 {
     int N = WIDTH * HEIGHT;
     int threadsPerBlock = 256;

@@ -88,7 +88,7 @@ class BiseNetTensorRT
         cudaStreamSynchronize(stream);
 
         // convert output in host memory to cv::Mat
-        cv::Mat outputImage(this->resizeShape, CV_32FC1, this->hostOutputMemory);
+        cv::Mat outputImage(this->resizeShape, CV_32SC1, this->hostOutputMemory);
         return outputImage;
     }
 
@@ -174,7 +174,7 @@ class BiseNetTensorRT
             this->outputSizeBytes *= d;
         }
         this->outputSizeBytes *= sizeof(float);
-        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(float);
+        this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(int);
 
         std::cout << "output size bytes = " << this->outputSizeBytes 
                   << " .. count = " << this->outputSizeBytes / sizeof(float) 
@@ -208,7 +208,7 @@ class BiseNetTensorRT
     private: float *deviceInputMemory = nullptr;
     private: float *hostOutputMemory = nullptr;
     private: float *deviceOutputMemory = nullptr;
-    private: float *deviceArgMaxMemory = nullptr;
+    private: int *deviceArgMaxMemory = nullptr;
 
     // Size of input & output for both host & device memories
     private: size_t inputSizeBytes = 1;
