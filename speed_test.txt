@@ -1,0 +1,15 @@
+# Native bisenetv2 & pointpainting
+Time of bisenetv2 = 64.72 ms
+Time of postprocesssing = 2.38 ms
+Time of total = 67 ms
+Time of pointpainting = 7.36 ms
+
+
+# Python TensoRT & PyCuda
+Time of preprocessing = 6 ms
+Time of inference = 45 ms
+Time of postprocessing = 2 ms
+Time of total = 53 ms
+
+# C++ TensoRT & PyCuda
+Total (inference + pre/post processing) = 43 ms

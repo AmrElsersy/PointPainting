@@ -56,12 +56,14 @@ def main(args):
     semantic = bisenetv2(input_image)
     t2 = time_synchronized()
     semantic = postprocessing(semantic)
-
-    painted_pointcloud = painter.paint(pointcloud, semantic, calib)
     t3 = time_synchronized()
 
+    painted_pointcloud = painter.paint(pointcloud, semantic, calib)
+    t4 = time_synchronized()
+
     print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
-    print(f'Time of pointpainting = {1000 * (t3-t2)} ms')
+    print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
+    print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
 
     if args.mode == '3d':
         visualizer.visuallize_pointcloud(painted_pointcloud, blocking=True)

@@ -100,15 +100,11 @@ class BiseNetTensorRT
 
         // Stretch one-channel images to vector
         for (auto &img : channels) {
-            std::cout << "before "<< img.size() << " " << img.rows << " " << img.cols << " " << img.channels() << std::endl;
             img = img.reshape(1, 1);
-            std::cout << "after "<< img.size() << " " << img.rows << " " << img.cols << " " << img.channels() << std::endl;
         }
 
         // Concatenate three vectors to one
         cv::hconcat( channels, dst );
-
-        std::cout << "dst "<< dst.size() << " " << dst.rows() << " " << dst.cols() << " " << dst.channels() << std::endl;
     }
 
     public: void PreProcessing(cv::Mat _image)
@@ -131,7 +127,7 @@ class BiseNetTensorRT
         // cudaMemcpy(this->hostInputMemory, (float*)nchw.data, this->inputSizeBytes, cudaMemcpyHostToHost);
         auto t4 = std::chrono::system_clock::now();
 
-#if 1
+#if 0
         std::cout << "resize time = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
         std::cout << "nchw time = " << std::chrono::duration<double>(t3-t2).count() * 1e3 << " ms" << std::endl;
         std::cout << "copy time = " << std::chrono::duration<double>(t4-t3).count() * 1e3 << " ms" << std::endl;
@@ -224,7 +220,8 @@ class BiseNetTensorRT
 cv::Mat global_image;
 void mouseHandler(int event,int x,int y, int flags,void* param)
 {
-    std::cout << x << ", " << y << "  =  " << (int)global_image.at<uchar>(y,x) << std::endl;
+    if (event == cv::EVENT_LBUTTONDOWN)
+        std::cout << x << ", " << y << "  =  " << (int)global_image.at<uchar>(y,x) << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -253,20 +250,17 @@ int main(int argc, char** argv)
         cv::Mat coloredSemantic;
         
         visualizer.ConvertToSemanticMap(semantic, coloredSemantic);
-        std::cout << semantic.size() << " , channels " << semantic.channels() << std::endl;
-        std::cout << coloredSemantic.size() << " , channels " << coloredSemantic.channels() << std::endl;
-
-        // just for visualization ,add 20 to brightness the image, as ids is [0-19] which is really dark
-        semantic.convertTo(semantic,CV_8UC1, 1, 20);
 
         cv::imshow("image", image);
-        cv::imshow("semantic", semantic);
-        std::cout << "colored semantic type = " << coloredSemantic.type() << " " << image.type() <<  std::endl;
         cv::imshow("coloredSemantic", coloredSemantic);
 
         global_image = semantic;
-        cv::setMouseCallback("semantic", mouseHandler, &semantic);
-        
+        cv::setMouseCallback("coloredSemantic", mouseHandler, &coloredSemantic);
+
+        // just for visualization ,add 20 to brightness the image, as ids is [0-19] which is really dark
+        // semantic.convertTo(semantic,CV_8UC1, 1, 20);
+        // cv::imshow("semantic", semantic);
+
         if (cv::waitKey(0) == 27)
         {
             cv::destroyAllWindows();

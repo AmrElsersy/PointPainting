@@ -126,45 +126,37 @@ class TensorRT_Bisenet:
         t1 = time.time()
         image_input = self.preprocessing_numpy(image)
         
-        t2 = time.time()
         # Flatten the image to put it in a sequential array
         image_input_flatten = image_input.ravel()
-        t3 = time.time()
         # Copy our image to the page-locked input host buffer
         np.copyto(self.input_host_memory, image_input_flatten)
-        t4 = time.time()
+
+        t2 = time.time()
 
         # transfer input host memory to device memory
         cuda.memcpy_htod_async(self.input_device_memory, self.input_host_memory, self.stream)
-        t5 = time.time()
         # tensorrt runtime execution
         self.context.execute_async_v2(bindings=self.bindings, stream_handle=self.stream.handle)
-        t6 = time.time()
         # transfer output device memory to host memory
         cuda.memcpy_dtoh_async(self.output_host_memory, self.output_device_memory, self.stream)
 
-        t7 = time.time()
         # synchronize waits until all preceding commands in the given stream have completed
         # https://leimao.github.io/blog/CUDA-Stream/ for asyncronization execution
         # https://developer.download.nvidia.com/CUDA/training/StreamsAndConcurrencyWebinar.pdf 
         self.stream.synchronize()
-        t8 = time.time()
 
         output = self.output_host_memory.reshape(self.cuda_engine.get_binding_shape(OUTPUT_BINDING))
-        t9 = time.time()
+        t3 = time.time()
 
         # postprocessing and visualization
-        semantic = self.postprocessing_numpy(output.squeeze(0))
+        semantic = self.postprocessing_numpy(output.squeeze(0)) # usually takes 2 ms
+        t4 = time.time()
 
         print("preprocessing ", (t2-t1)*1000, 'ms')
-        print("flatten ", (t3-t2)*1000, 'ms')
-        print("copy to host ", (t4-t3)*1000, 'ms')
-        print("host to device input ", (t5-t4)*1000, 'ms')
-        print("inference ", (t6-t5)*1000, 'ms')
-        print("device to host output", (t7-t6)*1000, 'ms')
-        print("syncronize ", (t8-t7)*1000, 'ms')       
-        print("reshape output ", (t9-t8)*1000, 'ms')
-        print("total ", (t9-t3)*1000, 'ms')
+        print("inference ", (t3-t2)*1000, 'ms')
+        print("postprocessing ", (t4-t3)*1000, 'ms')
+        print("total ", (t3-t1)*1000, 'ms')
+        print("total + postprocessing ", (t4-t1)*1000, 'ms')
 
         print("shapres input ", self.cuda_engine.get_binding_shape(INPUT_BINDING), " output ", self.cuda_engine.get_binding_shape(OUTPUT_BINDING))
 
