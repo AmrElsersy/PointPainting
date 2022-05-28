@@ -7,6 +7,7 @@
 #include "kernel_launch.h"
 #include "visualization.h"
 #include "BisenetTensorRT.h"
+#include <pointcloud_common.h>
 
 cv::Mat global_image;
 void mouseHandler(int event,int x,int y, int flags,void* param)
@@ -24,13 +25,20 @@ int main(int argc, char** argv)
     auto bisenet = BiseNetTensorRT(enginePath);
     auto visualizer = Visualizer();
 
-    std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/testing/image_2";
-    for (const auto & entry : std::filesystem::directory_iterator(rootPath))
+    std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/testing/";
+    std::string rootImagesPath = rootPath + "image_2";
+    std::string rootPointcloudsPath = rootPath + "velodyne";
+
+    for (const auto & entry : std::filesystem::directory_iterator(rootImagesPath))
     {
+        // read image
         std::string imagePath = entry.path().string();
         cv::Mat image = cv::imread(imagePath, cv::ImreadModes::IMREAD_COLOR);
         std::cout << imagePath << " " << image.size() << std::endl;
-        
+
+        // read pointcloud
+        std::vector<Point> pointcloud = loadPointCloud("");
+
         auto t1 = std::chrono::system_clock::now();
         // do inference
         cv::Mat semantic = bisenet.Inference(image);
