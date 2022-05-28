@@ -4,7 +4,7 @@
 
 __constant__ float projection_matrix[16];
 
-__global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, float* pointcloud_semantic, int n_points)
+__global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, unsigned char* pointcloud_semantic, int n_points)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid >= _points)
