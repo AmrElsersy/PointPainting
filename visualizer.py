@@ -159,6 +159,8 @@ class Visualizer():
 
 if __name__ == "__main__":
     import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, default="data/KITTI/kitti/velodyne")
@@ -166,14 +168,21 @@ if __name__ == "__main__":
 
     visualizer = Visualizer(mode='2d')
 
-    path = args.path 
+    # path = args.path 
+    path = '/home/amrelsersy/PointPainting/tensorrt_inference/results_pointclouds'
     paths = sorted(os.listdir(path))
     pointclouds_paths = [os.path.join(path, pointcloud_path) for pointcloud_path in paths]
 
     for pointcloud_path in pointclouds_paths:
         pointcloud = np.fromfile(pointcloud_path, dtype=np.float32).reshape((-1, 4))
-        print("pointcloud.shape ", pointcloud.shape)
         bev = visualizer.visualize_painted_pointcloud(pointcloud=pointcloud)
+
+        print("pointcloud.shape ", pointcloud.shape)
+        semantic_df = pd.DataFrame(pointcloud[:,3])
+        semantic_df.hist(bins=100)
+
+
         cv2.imshow("bev", bev)
+        plt.show()
         if cv2.waitKey(0) == 27:
             exit()

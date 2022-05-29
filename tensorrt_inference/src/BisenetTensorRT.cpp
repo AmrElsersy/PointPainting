@@ -55,25 +55,33 @@ BiseNetTensorRT::~BiseNetTensorRT()
 ////////////////////////////////////////////////////////////////
 cv::Mat BiseNetTensorRT::Inference(cv::Mat image)
 {
+    cudaStreamCreate(&this->stream);
+    std::cout << 1 << std::endl;
     // preprocessing transfer the image data to the hostInputMemory
     this->PreProcessing(image);
 
+    std::cout << 2 << std::endl;
     // copy input from host memory to device memroy
     cudaMemcpyAsync(this->deviceInputMemory, this->hostInputMemory,
                     this->inputSizeBytes, cudaMemcpyHostToDevice,
                     this->stream);
+    std::cout << 3 << std::endl;
 
     // TensorRT async execution through cuda context
     // shapres input  (1, 3, 512, 1024)  output  (1, 19, 512, 1024)
     this->context->enqueueV2(this->bindingBuffers.data(), this->stream, nullptr);
+    std::cout << 4 << std::endl;
 
     // Post processing
     // output of argmax is (512, 1024)
     argmaxLaunchKernel(this->deviceOutputMemory, this->deviceArgMaxMemory, stream);
+    std::cout << 5 << std::endl;
 
     cudaMemcpyAsync(this->hostOutputMemory, this->deviceArgMaxMemory, this->argmaxSizeBytes, cudaMemcpyDeviceToHost, stream);
+    std::cout << 6 << std::endl;
 
     cudaStreamSynchronize(stream);
+    std::cout << 7 << std::endl;
 
     // convert output in host memory to cv::Mat
     cv::Mat outputImage(this->resizeShape, CV_8UC1, this->hostOutputMemory);

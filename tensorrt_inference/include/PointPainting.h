@@ -5,13 +5,13 @@
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 
-#define MAX_NUM_POINTS_IN_POINTCLOUD 120 * 1000
+#define MAX_NUM_POINTS_IN_POINTCLOUD 130 * 1000
 
 class PointPainter
 {
 private:
     // calib matrices
-    float projectionMatrix[16];
+    vector<float> projectionMatrix;
 
     // Device memory
     float *dev_pointcloud;
@@ -33,6 +33,8 @@ private:
     // stream
     cudaStream_t stream;
 
+    cv::Mat resizedSemantic;
+
 public:
     PointPainter()
     {
@@ -42,25 +44,22 @@ public:
         this->sizePointcloudSemanticBytes = MAX_NUM_POINTS_IN_POINTCLOUD * sizeof(unsigned char);
 
         // calculate projection matrix
-        this->SetProjectionMatric();
+        this->SetProjectionMatrix();
 
         // allocate host & device memory
         this->AllocateInferenceMemory();
 
         // allocate max memory for the semantic cloud
         this->pointcloud_semantic.resize(MAX_NUM_POINTS_IN_POINTCLOUD);
-
-        // create stream for synchronization
-        cudaStreamCreate(&this->stream);
     }
     ~PointPainter()
     {
         cudaFree(this->dev_pointcloud);
         cudaFree(this->dev_pointcloud_semantic);
         cudaFree(this->dev_semantic);
-        cudaFree(this->host_pointcloud);
-        cudaFree(this->host_pointcloud_semantic);
-        cudaFree(this->host_semantic);
+        cudaFreeHost(this->host_pointcloud);
+        cudaFreeHost(this->host_pointcloud_semantic);
+        cudaFreeHost(this->host_semantic);
     }
 
     void Paint(std::vector<Point> &pointcloud, cv::Mat &semantic)
@@ -70,28 +69,27 @@ public:
         this->sizeInputPointsBytes = pointcloud.size() * POINTCLOUD_CHANNELS * sizeof(float);
 
         // convert pointcloud to array
-        float *pointcloud_data = convertPointsToArray(pointcloud).data();
+        float *pointcloud_data = convertPointsToArray(pointcloud);
 
         // resize the semantic shape[1024, 512] to standard kitti shape[1242, 375]
-        cv::resize(semantic, semantic, cv::Size(WIDTH_SEMANTIC_KITTI, HEIGHT_SEMANTIC_KITTI));
+        cv::resize(semantic, resizedSemantic, cv::Size(WIDTH_SEMANTIC_KITTI, HEIGHT_SEMANTIC_KITTI));
 
         // copy to page-locked memory then to GPU memory
         memcpy(this->host_pointcloud, pointcloud_data, sizeInputPointsBytes);
 
         // convert semantic map from cv::Mat to array and copy it to the page-locked memory
-        memcpy(this->host_semantic, semantic.data, this->sizeSemanticBytes);
+        memcpy(this->host_semantic, resizedSemantic.data, this->sizeSemanticBytes);
 
-        this->Inference(pointcloud.size());
-        // this->InferenceAsyncV2(pointcloud.size());
+        // this->Inference(pointcloud.size());
+        this->InferenceAsyncV2(pointcloud.size());
 
         // copy from page-locked memory to cpu memory
-        memcpy(this->pointcloud_semantic.data(), this->host_pointcloud_semantic, pointcloud.size() * sizeof(float));
+        memcpy(this->pointcloud_semantic.data(), this->host_pointcloud_semantic, pointcloud.size() * sizeof(unsigned char));
 
         // replace intensity with paining (for visualization)
         for (int i = 0; i < pointcloud.size(); i++)
         {
-            auto point = pointcloud[i];
-            point.intensity = this->pointcloud_semantic[i];
+            pointcloud[i].intensity = this->pointcloud_semantic[i];
             // access the pinned page-locked memory directly 
             // point.intensity = this->host_pointcloud_semantic[i];
         }
@@ -101,16 +99,24 @@ public:
 
     void Inference(int n_points)
     {
+        std::cout << "start inference " << std::endl;
+
         // copy pointcloud & semantic map from page-locked memory to device memory
         cudaMemcpy(this->dev_pointcloud, this->host_pointcloud, this->sizeInputPointsBytes, cudaMemcpyHostToDevice);
         cudaMemcpy(this->dev_semantic, this->host_semantic, this->sizeSemanticBytes, cudaMemcpyHostToDevice);
 
+        std::cout << "memory copied ! " << std::endl;
+
         // painting
-        pointpainting(dev_pointcloud, dev_semantic, projectionMatrix, n_points, dev_pointcloud_semantic, cudaStreamDefault);
+        pointpainting(dev_pointcloud, dev_semantic, projectionMatrix.data(), n_points, dev_pointcloud_semantic, cudaStreamDefault);
+
+        std::cout << "kernel launch " << std::endl;
 
         // copy result to page-locked memory
         cudaMemcpy(this->host_pointcloud_semantic, this->dev_pointcloud_semantic, 
             n_points * sizeof(float), cudaMemcpyDeviceToHost);
+
+        std::cout << "copy result " << std::endl;
     }
 
     void InferenceAsyncV2(int n_points)
@@ -120,7 +126,7 @@ public:
         cudaMemcpyAsync(this->dev_semantic, this->host_semantic, this->sizeSemanticBytes, cudaMemcpyHostToDevice, this->stream);
 
         // painting
-        pointpainting(dev_pointcloud, dev_semantic, projectionMatrix, n_points, dev_pointcloud_semantic, this->stream);
+        pointpainting(dev_pointcloud, dev_semantic, projectionMatrix.data(), n_points, dev_pointcloud_semantic, this->stream);
 
         // copy result to page-locked memory
         cudaMemcpyAsync(this->host_pointcloud_semantic, this->dev_pointcloud_semantic, 
@@ -133,14 +139,17 @@ public:
     void AllocateInferenceMemory()
     {
         // Device Memory
-        cudaMalloc(this->dev_semantic, this->sizeSemanticBytes);
-        cudaMalloc(this->dev_pointcloud, this->sizePointcloudBytes);
-        cudaMalloc(this->dev_pointcloud_semantic, this->sizePointcloudSemanticBytes);
+        cudaMalloc((void**)&this->dev_semantic, this->sizeSemanticBytes);
+        cudaMalloc((void**)&this->dev_pointcloud, this->sizePointcloudBytes);
+        cudaMalloc((void**)&this->dev_pointcloud_semantic, this->sizePointcloudSemanticBytes);
 
         // Page-Locked Host Memory
-        cudaMallocHost(this->host_semantic, this->sizeSemanticBytes);
-        cudaMallocHost(this->host_pointcloud, this->sizePointcloudBytes);
-        cudaMallocHost(this->host_pointcloud_semantic, this->sizePointcloudSemanticBytes);
+        cudaHostAlloc((void**)&this->host_semantic, this->sizeSemanticBytes, cudaHostAllocDefault);
+        cudaHostAlloc((void**)&this->host_pointcloud, this->sizePointcloudBytes, cudaHostAllocDefault);
+        cudaHostAlloc((void**)&this->host_pointcloud_semantic, this->sizePointcloudSemanticBytes, cudaHostAllocDefault);
+
+        // create stream for synchronization
+        cudaStreamCreate(&this->stream);    
     }
     
     void SetProjectionMatrix()
@@ -166,12 +175,15 @@ public:
                                       9.998621e-01, 7.52379e-03, 1.480755e-02, -2.717806e-01, 
                                       0, 0, 0, 1};
 
+        // default order for Eigen is column based, so create row based matrices to store the data
         Eigen::Matrix<float, 4, 4, Eigen::RowMajor> P2(P2_data);
         Eigen::Matrix<float, 4, 4, Eigen::RowMajor> rect(rect_data);
         Eigen::Matrix<float, 4, 4, Eigen::RowMajor> velo_to_cam(velo_to_cam_data);
-
+        
         Eigen::Matrix<float, 4, 4, Eigen::RowMajor> final_matrix = P2 * rect * velo_to_cam;
+
+        this->projectionMatrix.resize(16); 
         for (int i = 0; i < 16; i++)
-            this->projectionMatrix[i] = final_matrix.data[i];
+            this->projectionMatrix[i] = final_matrix.data()[i];
     }
 };

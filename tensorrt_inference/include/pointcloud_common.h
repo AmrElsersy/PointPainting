@@ -3,6 +3,9 @@
 #include <eigen3/Eigen/Eigen>
 using namespace std;
 
+#ifndef POINTCLOUD_COMMON
+#define POINTCLOUD_COMMON
+
 #define X_IDX 0
 #define Y_IDX 1
 #define Z_IDX 2
@@ -73,9 +76,10 @@ vector<Point> convertArrayToPoints(int N, float *host_transformed_cloud)
 
 float * convertPointsToArray(vector<Point> pointcloud)
 {
-    float *pointcloud_data = new float(pointcloud.size() * 4);
-    for (auto point : pointcloud)
+    float *pointcloud_data = new float[pointcloud.size() * 4];
+    for (int i = 0; i < pointcloud.size(); i++)
     {
+        auto point = pointcloud[i];
         pointcloud_data[i * 4 + 0] = point.x;
         pointcloud_data[i * 4 + 1] = point.y;
         pointcloud_data[i * 4 + 2] = point.z;
@@ -83,3 +87,5 @@ float * convertPointsToArray(vector<Point> pointcloud)
     }
     return pointcloud_data;
 }
+
+#endif

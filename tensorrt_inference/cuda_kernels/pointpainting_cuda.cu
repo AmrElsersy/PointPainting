@@ -1,5 +1,6 @@
 #include "kernel_launch.h"
 #include <math.h>
+#include <bits/stdc++.h>
 
 
 __constant__ float projection_matrix[16];
@@ -7,11 +8,12 @@ __constant__ float projection_matrix[16];
 __global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, unsigned char* pointcloud_semantic, int n_points)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    if (tid >= _points)
+    if (tid >= n_points)
         return;
 
-    float4 point = pointcloud[tid * POINTCLOUD_CHANNELS];
-    point.w = 1;
+    float x = pointcloud[tid * POINTCLOUD_CHANNELS + 0];
+    float y = pointcloud[tid * POINTCLOUD_CHANNELS + 1];
+    float z = pointcloud[tid * POINTCLOUD_CHANNELS + 2];
 
     float projected_point[4];
 
@@ -19,10 +21,10 @@ __global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, 
     for (int i = 0; i < 4; i++)
     {
         float dotProduct = 0;
-        dotProduct += projection_matrix[i * 4 + 0] * point.x;
-        dotProduct += projection_matrix[i * 4 + 1] * point.y;
-        dotProduct += projection_matrix[i * 4 + 2] * point.z;
-        dotProduct += projection_matrix[i * 4 + 3] * point.w;
+        dotProduct += projection_matrix[i * 4 + 0] * x;
+        dotProduct += projection_matrix[i * 4 + 1] * y;
+        dotProduct += projection_matrix[i * 4 + 2] * z;
+        dotProduct += projection_matrix[i * 4 + 3]; // W =1 , * 1
 
         projected_point[i] = dotProduct;        
     }
@@ -54,7 +56,12 @@ void pointpainting(float *pointcloud, unsigned char *semantic_map, float *proj_m
     // int device;
     // cudaDeviceGet
 
+    // std::cout << (void *)semantic_map << " , " << n_points << " , " << (void*)pointcloud_semantic << std::endl;
+    // std::cout << pointcloud << "," << semantic_map << "," << proj_matrix << "," << n_points << "," << pointcloud_semantic << "," << std::endl;
+
     int threadsPerBlock = 128;
     int numBlocks = ceil(double(n_points) / threadsPerBlock);
     painting_kernel<<<numBlocks, threadsPerBlock, 0, stream>>>(pointcloud, semantic_map, pointcloud_semantic, n_points);
+
+    std::cout << "Painted called " << std::endl;
 }
