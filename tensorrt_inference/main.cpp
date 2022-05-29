@@ -28,7 +28,7 @@ int main(int argc, char** argv)
     auto visualizer = Visualizer();
 
     std::string savePointcloudsPath = "/home/amrelsersy/PointPainting/tensorrt_inference/results_pointclouds";
-    std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/testing/";
+    std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/kitti/";
     std::string rootImagesPath = rootPath + "image_2";
     std::string rootPointcloudsPath = rootPath + "velodyne";
 
@@ -92,7 +92,6 @@ int main(int argc, char** argv)
             cv::destroyAllWindows();
             return 0;
         }
-
     }
     return 0;
 }

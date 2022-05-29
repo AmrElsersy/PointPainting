@@ -1,3 +1,4 @@
+import argparse
 import sys, time
 import cv2
 import numpy as np
@@ -150,5 +151,29 @@ class Visualizer():
 
         return color_map
 
+    def visualize_painted_pointcloud(self, pointcloud):
+        bev = pointcloud_to_bev(pointcloud) # (600,600,4)
+        bev = self.__bev_to_colored_bev(bev)
+        return bev        
 
 
+if __name__ == "__main__":
+    import os
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', type=str, default="data/KITTI/kitti/velodyne")
+    args = parser.parse_args()
+
+    visualizer = Visualizer(mode='2d')
+
+    path = args.path 
+    paths = sorted(os.listdir(path))
+    pointclouds_paths = [os.path.join(path, pointcloud_path) for pointcloud_path in paths]
+
+    for pointcloud_path in pointclouds_paths:
+        pointcloud = np.fromfile(pointcloud_path, dtype=np.float32).reshape((-1, 4))
+        print("pointcloud.shape ", pointcloud.shape)
+        bev = visualizer.visualize_painted_pointcloud(pointcloud=pointcloud)
+        cv2.imshow("bev", bev)
+        if cv2.waitKey(0) == 27:
+            exit()

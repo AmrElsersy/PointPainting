@@ -71,15 +71,15 @@ vector<Point> convertArrayToPoints(int N, float *host_transformed_cloud)
     return transformed_cloud;
 }
 
-vector<float> convertPointsToArray(vector<Point> pointcloud)
+float * convertPointsToArray(vector<Point> pointcloud)
 {
-    vector<float> pointcloud_data;
+    float *pointcloud_data = new float(pointcloud.size() * 4);
     for (auto point : pointcloud)
     {
-        pointcloud_data.push_back(point.x);
-        pointcloud_data.push_back(point.y);
-        pointcloud_data.push_back(point.z);
-        pointcloud_data.push_back(point.intensity);
+        pointcloud_data[i * 4 + 0] = point.x;
+        pointcloud_data[i * 4 + 1] = point.y;
+        pointcloud_data[i * 4 + 2] = point.z;
+        pointcloud_data[i * 4 + 3] = point.intensity;
     }
     return pointcloud_data;
 }
