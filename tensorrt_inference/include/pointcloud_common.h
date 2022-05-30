@@ -74,9 +74,9 @@ vector<Point> convertArrayToPoints(int N, float *host_transformed_cloud)
     return transformed_cloud;
 }
 
-float * convertPointsToArray(const vector<Point> &pointcloud)
+///\param[in] poincloud_data page-locked memory pointer of size n_points * channels * sizeof(float) 
+void convertPointsToArray(const vector<Point> &pointcloud, float *pointcloud_data)
 {
-    float *pointcloud_data = new float[pointcloud.size() * 4];
     for (int i = 0; i < pointcloud.size(); i++)
     {
         auto point = pointcloud[i];
@@ -85,7 +85,6 @@ float * convertPointsToArray(const vector<Point> &pointcloud)
         pointcloud_data[i * 4 + 2] = point.z;
         pointcloud_data[i * 4 + 3] = point.intensity;
     }
-    return pointcloud_data;
 }
 
 #endif

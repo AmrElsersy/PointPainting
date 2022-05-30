@@ -47,11 +47,6 @@ class PointPainter():
         # print(velo_to_cam.shape, R_rect.shape, P2.shape)
 
         # 2D image point = Projection @ Rectification @ Extrinsic @ 3D Velodyne
-        # xxx = P2 @ R_rect @ velo_to_cam 
-        # print(xxx)
-        # print(xxx.shape)
-        # exit(0)
-
         projected_points = P2 @ R_rect @ velo_to_cam @ pointcloud.T # (4,N) == (4,4) @ (4,N) 
         # device by z homoginous to get x & y
         projected_points /= projected_points[2]

@@ -69,54 +69,38 @@ public:
         this->sizeInputPointsBytes = pointcloud.size() * POINTCLOUD_CHANNELS * sizeof(float);
 
         // convert pointcloud to array
-        float *pointcloud_data = convertPointsToArray(pointcloud);
+        convertPointsToArray(pointcloud, this->host_pointcloud);
 
         // resize the semantic shape[1024, 512] to standard kitti shape[1242, 375]
         cv::resize(semantic, resizedSemantic, cv::Size(WIDTH_SEMANTIC_KITTI, HEIGHT_SEMANTIC_KITTI), cv::INTER_NEAREST);
 
-        // copy to page-locked memory then to GPU memory
-        memcpy(this->host_pointcloud, pointcloud_data, sizeInputPointsBytes);
-
         // convert semantic map from cv::Mat to array and copy it to the page-locked memory
         memcpy(this->host_semantic, resizedSemantic.data, this->sizeSemanticBytes);
 
-        this->Inference(pointcloud.size());
-        // this->InferenceAsyncV2(pointcloud.size());
-
-        // copy from page-locked memory to cpu memory
-        memcpy(this->pointcloud_semantic.data(), this->host_pointcloud_semantic, pointcloud.size() * sizeof(unsigned char));
+        // this->Inference(pointcloud.size());
+        this->InferenceAsyncV2(pointcloud.size());
 
         // replace intensity with paining (for visualization)
         for (int i = 0; i < pointcloud.size(); i++)
-        {
-            // pointcloud[i].intensity = this->pointcloud_semantic[i];
             // access the pinned page-locked memory directly 
             pointcloud[i].intensity = this->host_pointcloud_semantic[i];
-        }
-
-        free(pointcloud_data);
     }
 
     void Inference(int n_points)
     {
-        std::cout << "start inference " << std::endl;
-
         // copy pointcloud & semantic map from page-locked memory to device memory
         cudaMemcpy(this->dev_pointcloud, this->host_pointcloud, this->sizeInputPointsBytes, cudaMemcpyHostToDevice);
         cudaMemcpy(this->dev_semantic, this->host_semantic, this->sizeSemanticBytes, cudaMemcpyHostToDevice);
 
-        std::cout << "memory copied ! " << std::endl;
+        // set all points to be unlabeled till we label them
+        cudaMemset(this->dev_pointcloud_semantic, UNLABELED_POINT, n_points * sizeof(unsigned char));
 
         // painting
         pointpainting(dev_pointcloud, dev_semantic, projectionMatrix.data(), n_points, dev_pointcloud_semantic, cudaStreamDefault);
 
-        std::cout << "kernel launch " << std::endl;
-
         // copy result to page-locked memory
         cudaMemcpy(this->host_pointcloud_semantic, this->dev_pointcloud_semantic, 
             n_points * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-
-        std::cout << "copy result " << std::endl;
     }
 
     void InferenceAsyncV2(int n_points)
@@ -125,8 +109,11 @@ public:
         cudaMemcpyAsync(this->dev_pointcloud, this->host_pointcloud, this->sizeInputPointsBytes, cudaMemcpyHostToDevice, this->stream);
         cudaMemcpyAsync(this->dev_semantic, this->host_semantic, this->sizeSemanticBytes, cudaMemcpyHostToDevice, this->stream);
 
+        // set all points to be unlabeled till we label them
+        cudaMemsetAsync(this->dev_pointcloud_semantic, UNLABELED_POINT, n_points * sizeof(unsigned char), this->stream);
+
         // painting
-        pointpainting(dev_pointcloud, dev_semantic, projectionMatrix.data(), n_points, dev_pointcloud_semantic, this->stream);
+        pointpainting(this->dev_pointcloud, this->dev_semantic, projectionMatrix.data(), n_points, this->dev_pointcloud_semantic, this->stream);
 
         // copy result to page-locked memory
         cudaMemcpyAsync(this->host_pointcloud_semantic, this->dev_pointcloud_semantic, 

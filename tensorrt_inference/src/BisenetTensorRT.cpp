@@ -58,28 +58,22 @@ cv::Mat BiseNetTensorRT::Inference(cv::Mat image)
     // preprocessing transfer the image data to the hostInputMemory
     this->PreProcessing(image);
 
-    std::cout << 2 << std::endl;
     // copy input from host memory to device memroy
     cudaMemcpyAsync(this->deviceInputMemory, this->hostInputMemory,
                     this->inputSizeBytes, cudaMemcpyHostToDevice,
                     this->stream);
-    std::cout << 3 << std::endl;
 
     // TensorRT async execution through cuda context
     // shapres input  (1, 3, 512, 1024)  output  (1, 19, 512, 1024)
     this->context->enqueueV2(this->bindingBuffers.data(), this->stream, nullptr);
-    std::cout << 4 << std::endl;
 
     // Post processing
     // output of argmax is (512, 1024)
     argmaxLaunchKernel(this->deviceOutputMemory, this->deviceArgMaxMemory, stream);
-    std::cout << 5 << std::endl;
 
     cudaMemcpyAsync(this->hostOutputMemory, this->deviceArgMaxMemory, this->argmaxSizeBytes, cudaMemcpyDeviceToHost, stream);
-    std::cout << 6 << std::endl;
 
     cudaStreamSynchronize(stream);
-    std::cout << 7 << std::endl;
 
     // convert output in host memory to cv::Mat
     cv::Mat outputImage(this->resizeShape, CV_8UC1, this->hostOutputMemory);
@@ -142,16 +136,11 @@ void BiseNetTensorRT::AllocateMemory()
             continue;
         this->inputSizeBytes *= d;
     }
-    std::cout << std::endl;
     this->inputSizeBytes *= sizeof(float);
-
-    std::cout << "input size bytes = " << this->inputSizeBytes << " .. count = " << this->inputSizeBytes / sizeof(float) << std::endl;
 
     // allocate page-lock memory
     cudaHostAlloc((void**)&this->hostInputMemory, this->inputSizeBytes, cudaHostAllocDefault);
     cudaMalloc((void**)&this->deviceInputMemory, this->inputSizeBytes);
-
-    std::cout << "input memories: "<< this->hostInputMemory << " . " << this->deviceInputMemory << std::endl;
 
     // allocate page-lock memory(host memory) & GPU device memory for output
     nvinfer1::Dims outputDims = this->cudaEngine->getBindingDimensions(OUTPUT_BINDING_INDEX);
@@ -164,17 +153,11 @@ void BiseNetTensorRT::AllocateMemory()
     this->outputSizeBytes *= sizeof(float);
     this->argmaxSizeBytes = this->resizeShape.width * this->resizeShape.height * sizeof(uchar);
 
-    std::cout << "output size bytes = " << this->outputSizeBytes 
-                << " .. count = " << this->outputSizeBytes / sizeof(float) 
-                << " .. argmax " << this->argmaxSizeBytes << " and count =" << this->argmaxSizeBytes/sizeof(uchar)
-                << std::endl;
-
     // allocate page-lock memory & device memory
     cudaHostAlloc((void**)&this->hostOutputMemory, this->argmaxSizeBytes, cudaHostAllocDefault);
     cudaMalloc((void**)&this->deviceOutputMemory, this->outputSizeBytes);
     cudaMalloc((void**)&this->deviceArgMaxMemory, this->argmaxSizeBytes);
 
-    std::cout << "output memories: " << this->hostOutputMemory << " . " << this->deviceOutputMemory << std::endl;
 
     // Bindings buffers of device for Cuda context execution
     this->bindingBuffers.push_back(this->deviceInputMemory);

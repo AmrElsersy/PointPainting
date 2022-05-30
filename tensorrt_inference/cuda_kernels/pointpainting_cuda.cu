@@ -55,10 +55,10 @@ void pointpainting(float *pointcloud, unsigned char *semantic_map, float *proj_m
                     unsigned char *pointcloud_semantic, cudaStream_t stream)
 {
     // set the constant projection matrix
-    cudaMemcpyToSymbol(projection_matrix, proj_matrix, 16 * sizeof(float), 0UL, cudaMemcpyHostToDevice);
-    
-    // set all points to be unlabeled till we label them
-    cudaMemset(pointcloud_semantic, UNLABELED_POINT, n_points * sizeof(unsigned char));
+    if (stream == cudaStreamDefault)
+        cudaMemcpyToSymbol(projection_matrix, proj_matrix, 16 * sizeof(float), 0UL, cudaMemcpyHostToDevice);
+    else
+        cudaMemcpyToSymbolAsync(projection_matrix, proj_matrix, 16 * sizeof(float), 0UL, cudaMemcpyHostToDevice, stream);
 
     // device multiprocessors
     // CUdevprop *properties;
