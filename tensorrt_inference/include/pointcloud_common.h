@@ -74,7 +74,7 @@ vector<Point> convertArrayToPoints(int N, float *host_transformed_cloud)
     return transformed_cloud;
 }
 
-float * convertPointsToArray(vector<Point> pointcloud)
+float * convertPointsToArray(const vector<Point> &pointcloud)
 {
     float *pointcloud_data = new float[pointcloud.size() * 4];
     for (int i = 0; i < pointcloud.size(); i++)

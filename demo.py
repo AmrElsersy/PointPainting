@@ -59,6 +59,10 @@ def main(args):
     t3 = time_synchronized()
 
     painted_pointcloud = painter.paint(pointcloud, semantic, calib)
+    import pandas as pd
+    df = pd.DataFrame(painted_pointcloud[:,3])
+    print(df.value_counts())
+    
     t4 = time_synchronized()
 
     print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')

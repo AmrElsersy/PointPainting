@@ -27,8 +27,8 @@ int main(int argc, char** argv)
     auto bisenet = BiseNetTensorRT(enginePath);
     auto visualizer = Visualizer();
 
-    std::string savePointcloudsPath = "/home/amrelsersy/PointPainting/tensorrt_inference/results_pointclouds/";
-    std::string rootPath = "/home/amrelsersy/PointPainting/data/KITTI/kitti/";
+    std::string rootPath = "/home/amrelsersy/PointPainting/tensorrt_inference/data/";
+    std::string savePointcloudsPath = "/home/amrelsersy/PointPainting/tensorrt_inference/data/results_pointclouds/";
     std::string rootImagesPath = rootPath + "image_2";
     std::string rootPointcloudsPath = rootPath + "velodyne";
 
@@ -41,7 +41,6 @@ int main(int argc, char** argv)
         std::string imagePath = entry.path().string();
         imagesPaths.push_back(imagePath);
     }
-
     for (const auto & entry : std::filesystem::directory_iterator(rootPointcloudsPath))
     {
         std::string pointcloudPath = entry.path().string();
@@ -50,38 +49,36 @@ int main(int argc, char** argv)
 
     std::sort(imagesPaths.begin(), imagesPaths.end());
     std::sort(pointcloudsPaths.begin(), pointcloudsPaths.end());
-    
+    // std::sort(semanticsPaths.begin(), semanticsPaths.end());
 
     // loop over samples
     for (int i = 0; i < imagesPaths.size(); i++)
     {
         // read image
         std::string imagePath = imagesPaths[i];
-        std::string pointcloudPath = pointcloudsPaths[i];
-
         cv::Mat image = cv::imread(imagePath, cv::ImreadModes::IMREAD_COLOR);
+
+        // read pointcloud
+        std::string pointcloudPath = pointcloudsPaths[i];
         std::vector<Point> pointcloud = loadPointCloud(pointcloudPath);
 
-        std::cout << imagePath << " " << pointcloudPath << std::endl;
         auto t1 = std::chrono::system_clock::now();
 
         // do inference
         cv::Mat semantic = bisenet.Inference(image);
 
         auto t2 = std::chrono::system_clock::now();
-        std::cout << "Inference = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
 
-        using namespace std;
         // pointpainting
-        // painter.Paint(pointcloud, semantic);
+        painter.Paint(pointcloud, semantic);
 
-        // for (auto point : pointcloud)
-        // {
-        //     if (point.intensity != 0)
-        //         cout << point.intensity << " ";
-        // }
+        auto t3 = std::chrono::system_clock::now();
 
-        // savePointCloud(pointcloud, savePointcloudsPath + to_string(i) + ".bin");
+        std::cout << "Bisenetv2 = " << std::chrono::duration<double>(t2-t1).count() * 1e3 << " ms" << std::endl;
+        std::cout << "PointPainting = " << std::chrono::duration<double>(t3-t2).count() * 1e3 << " ms" << std::endl;
+        std::cout << "Total Inference = " << std::chrono::duration<double>(t3-t1).count() * 1e3 << " ms" << std::endl;
+
+        savePointCloud(pointcloud, savePointcloudsPath + to_string(i) + ".bin");
 
         std::cout << semantic.size() << std::endl;
         // visualization
@@ -89,7 +86,7 @@ int main(int argc, char** argv)
         cv::Mat coloredSemantic;
         visualizer.ConvertToSemanticMap(semantic, coloredSemantic);
 
-        cv::imshow("image", image);
+        // cv::imshow("image", image);
         cv::imshow("coloredSemantic", coloredSemantic);
 
         // global_image = cv::Mat(semantic);

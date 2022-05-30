@@ -55,8 +55,6 @@ BiseNetTensorRT::~BiseNetTensorRT()
 ////////////////////////////////////////////////////////////////
 cv::Mat BiseNetTensorRT::Inference(cv::Mat image)
 {
-    cudaStreamCreate(&this->stream);
-    std::cout << 1 << std::endl;
     // preprocessing transfer the image data to the hostInputMemory
     this->PreProcessing(image);
 
@@ -134,10 +132,6 @@ void BiseNetTensorRT::PreProcessing(cv::Mat _image)
 ////////////////////////////////////////////////////////////////
 void BiseNetTensorRT::AllocateMemory()
 {
-    for (int i = 0; i < this->cudaEngine->getNbBindings(); i++)
-        std::cout << this->cudaEngine->getBindingName(i) << " , ";
-        std::cout << std::endl;
-
     // allocate page-lock memory(host memory) & GPU device memory for input
     // size of input bindings
     nvinfer1::Dims inputDims = this->cudaEngine->getBindingDimensions(INPUT_BINDING_INDEX);

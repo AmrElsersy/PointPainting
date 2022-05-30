@@ -153,7 +153,7 @@ class Visualizer():
 
     def visualize_painted_pointcloud(self, pointcloud):
         bev = pointcloud_to_bev(pointcloud) # (600,600,4)
-        bev = self.__bev_to_colored_bev(bev)
+        bev = self.__bev_to_colored_bev(bev) / 255.0
         return bev        
 
 
@@ -167,9 +167,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     visualizer = Visualizer(mode='2d')
+    # visualizer = Visualizer(mode='3d')
 
     # path = args.path 
-    path = '/home/amrelsersy/PointPainting/tensorrt_inference/results_pointclouds'
+    path = 'tensorrt_inference/data/results_pointclouds'
     paths = sorted(os.listdir(path))
     pointclouds_paths = [os.path.join(path, pointcloud_path) for pointcloud_path in paths]
 
@@ -178,11 +179,15 @@ if __name__ == "__main__":
         bev = visualizer.visualize_painted_pointcloud(pointcloud=pointcloud)
 
         print("pointcloud.shape ", pointcloud.shape)
-        semantic_df = pd.DataFrame(pointcloud[:,3])
-        semantic_df.hist(bins=100)
-
+        semantic_channel = pointcloud[:,3]
+        semantic_channel = semantic_channel[semantic_channel != 255]
+        semantic_df = pd.DataFrame(semantic_channel)
+        # semantic_df.hist(bins=100)
+        print(semantic_df.value_counts())
 
         cv2.imshow("bev", bev)
         plt.show()
         if cv2.waitKey(0) == 27:
             exit()
+
+        # visualizer.visuallize_pointcloud(pointcloud, True)

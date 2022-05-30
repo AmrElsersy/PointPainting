@@ -72,7 +72,7 @@ public:
         float *pointcloud_data = convertPointsToArray(pointcloud);
 
         // resize the semantic shape[1024, 512] to standard kitti shape[1242, 375]
-        cv::resize(semantic, resizedSemantic, cv::Size(WIDTH_SEMANTIC_KITTI, HEIGHT_SEMANTIC_KITTI));
+        cv::resize(semantic, resizedSemantic, cv::Size(WIDTH_SEMANTIC_KITTI, HEIGHT_SEMANTIC_KITTI), cv::INTER_NEAREST);
 
         // copy to page-locked memory then to GPU memory
         memcpy(this->host_pointcloud, pointcloud_data, sizeInputPointsBytes);
@@ -80,8 +80,8 @@ public:
         // convert semantic map from cv::Mat to array and copy it to the page-locked memory
         memcpy(this->host_semantic, resizedSemantic.data, this->sizeSemanticBytes);
 
-        // this->Inference(pointcloud.size());
-        this->InferenceAsyncV2(pointcloud.size());
+        this->Inference(pointcloud.size());
+        // this->InferenceAsyncV2(pointcloud.size());
 
         // copy from page-locked memory to cpu memory
         memcpy(this->pointcloud_semantic.data(), this->host_pointcloud_semantic, pointcloud.size() * sizeof(unsigned char));
@@ -89,9 +89,9 @@ public:
         // replace intensity with paining (for visualization)
         for (int i = 0; i < pointcloud.size(); i++)
         {
-            pointcloud[i].intensity = this->pointcloud_semantic[i];
+            // pointcloud[i].intensity = this->pointcloud_semantic[i];
             // access the pinned page-locked memory directly 
-            // point.intensity = this->host_pointcloud_semantic[i];
+            pointcloud[i].intensity = this->host_pointcloud_semantic[i];
         }
 
         free(pointcloud_data);
@@ -114,7 +114,7 @@ public:
 
         // copy result to page-locked memory
         cudaMemcpy(this->host_pointcloud_semantic, this->dev_pointcloud_semantic, 
-            n_points * sizeof(float), cudaMemcpyDeviceToHost);
+            n_points * sizeof(unsigned char), cudaMemcpyDeviceToHost);
 
         std::cout << "copy result " << std::endl;
     }
@@ -130,7 +130,7 @@ public:
 
         // copy result to page-locked memory
         cudaMemcpyAsync(this->host_pointcloud_semantic, this->dev_pointcloud_semantic, 
-            n_points * sizeof(float), cudaMemcpyDeviceToHost, this->stream);
+            n_points * sizeof(unsigned char), cudaMemcpyDeviceToHost, this->stream);
 
         // Synchronize, wait till all async operations finish
         cudaStreamSynchronize(this->stream);

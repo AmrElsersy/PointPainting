@@ -12,4 +12,11 @@ Time of postprocessing = 2 ms
 Time of total = 53 ms
 
 # C++ TensoRT & PyCuda
-Total (inference + pre/post processing) = 43 ms
+Total (inference + pre/post processing) = 43 to 50 ms
+
+
+Python PointPainting
+7 to 8 ms
+
+C++ Cuda PointPainting
+PointPainting = 3.2308 ms

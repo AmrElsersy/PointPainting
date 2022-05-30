@@ -3,6 +3,11 @@
 #include <bits/stdc++.h>
 
 
+#define MIN_X_POINTCLOUD_RANGE 0
+#define MAX_X_POINTCLOUD_RANGE 50
+#define MIN_Y_POINTCLOUD_RANGE -25
+#define MAX_Y_POINTCLOUD_RANGE 25
+
 __constant__ float projection_matrix[16];
 
 __global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, unsigned char* pointcloud_semantic, int n_points)
@@ -15,7 +20,10 @@ __global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, 
     float y = pointcloud[tid * POINTCLOUD_CHANNELS + 1];
     float z = pointcloud[tid * POINTCLOUD_CHANNELS + 2];
 
-    float projected_point[4];
+    if (x < MIN_X_POINTCLOUD_RANGE || x > MAX_X_POINTCLOUD_RANGE || y < MIN_Y_POINTCLOUD_RANGE || y > MAX_Y_POINTCLOUD_RANGE)
+        return;
+
+    float projected_point[4] = {0};
 
     // transform each point with the projection matrix (proj is the dot product of the 3 matrices : P2 @ rect @ velo_to_cam)
     for (int i = 0; i < 4; i++)
@@ -34,11 +42,11 @@ __global__ void painting_kernel(float *pointcloud, unsigned char *semantic_map, 
     projected_point[1] /= projected_point[2];
 
     // get x,y coordinates of the semantic map
-    int x_semantic = (int)projected_point[0]; 
-    int y_semantic = (int)projected_point[1];
+    int y_semantic = (int)projected_point[0]; 
+    int x_semantic = (int)projected_point[1];
 
     // only assign a label to the point if its projected point lies inside the semantic map, otherwise it is already has unlabeled value(255)
-    if (x_semantic < HEIGHT_SEMANTIC_KITTI && y_semantic < WIDTH_SEMANTIC_KITTI)
+    if (x_semantic >= 0 && y_semantic >= 0 && x_semantic < HEIGHT_SEMANTIC_KITTI && y_semantic < WIDTH_SEMANTIC_KITTI)
         // assign a label to the point with the corresponding x,y projected point in the semantic map
         pointcloud_semantic[tid] = semantic_map[x_semantic * WIDTH_SEMANTIC_KITTI + y_semantic];
 }
@@ -48,19 +56,17 @@ void pointpainting(float *pointcloud, unsigned char *semantic_map, float *proj_m
 {
     // set the constant projection matrix
     cudaMemcpyToSymbol(projection_matrix, proj_matrix, 16 * sizeof(float), 0UL, cudaMemcpyHostToDevice);
-
+    
     // set all points to be unlabeled till we label them
     cudaMemset(pointcloud_semantic, UNLABELED_POINT, n_points * sizeof(unsigned char));
 
     // device multiprocessors
-    // int device;
-    // cudaDeviceGet
-
-    // std::cout << (void *)semantic_map << " , " << n_points << " , " << (void*)pointcloud_semantic << std::endl;
-    // std::cout << pointcloud << "," << semantic_map << "," << proj_matrix << "," << n_points << "," << pointcloud_semantic << "," << std::endl;
+    // CUdevprop *properties;
+    // cuDeviceGetProperties(properties, cuDeviceGet());
 
     int threadsPerBlock = 128;
     int numBlocks = ceil(double(n_points) / threadsPerBlock);
+    std::cout << "pointpainting kernel with blocks = " << numBlocks << " & threads = " << threadsPerBlock << std::endl;
     painting_kernel<<<numBlocks, threadsPerBlock, 0, stream>>>(pointcloud, semantic_map, pointcloud_semantic, n_points);
 
     std::cout << "Painted called " << std::endl;
