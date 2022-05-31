@@ -1,3 +1,6 @@
+#ifndef KERNEL_LAUNCH
+#define KERNEL_LAUNCH
+
 #include <cuda_runtime.h>
 #include <cudaProfiler.h>
 #include <cuda_profiler_api.h>
@@ -7,7 +10,6 @@
 #define WIDTH 1024
 #define HEIGHT 512
 #define CHANNELS 19
-#define DONT_CARE -1
 
 void argmaxLaunchKernel(float *bisenet_output, unsigned char *argmax_output, cudaStream_t stream);
 
@@ -16,6 +18,10 @@ void argmaxLaunchKernel(float *bisenet_output, unsigned char *argmax_output, cud
 #define HEIGHT_SEMANTIC_KITTI 375
 #define POINTCLOUD_CHANNELS 4
 #define UNLABELED_POINT 255
+#define MAX_NUM_POINTS_IN_POINTCLOUD 130 * 1000
 
 void pointpainting(float *pointcloud, unsigned char *semantic_map, float *proj_matrix, int n_points, 
                     unsigned char *pointcloud_semantic, cudaStream_t stream);
+
+
+#endif

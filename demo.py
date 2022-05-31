@@ -68,7 +68,8 @@ def main(args):
     print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
     print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
     print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
-
+    print(f'Time of Total = {1000 * (t4-t1)} ms')
+    
     if args.mode == '3d':
         visualizer.visuallize_pointcloud(painted_pointcloud, blocking=True)
     else:

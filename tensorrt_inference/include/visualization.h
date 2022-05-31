@@ -1,3 +1,6 @@
+#ifndef VISUALIZER
+#define VISUALIZER
+
 #include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <bits/stdc++.h>
@@ -47,6 +50,9 @@ public:
                 semantic.at<cv::Vec3b>(row,col) = this->semanticToColorMap[id];
             }
         }
+
+        // just for visualization, convert to BGR
+        cv::cvtColor(semantic, semantic, cv::COLOR_RGB2BGR);
     }
 
     std::vector<float> ConvertToSemanticPointcloud(std::vector<float> pointcloud)
@@ -61,3 +67,5 @@ private:
     cv::Size shape;
 
 };
+
+#endif

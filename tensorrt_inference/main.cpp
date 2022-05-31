@@ -4,18 +4,9 @@
 #include <opencv2/opencv.hpp>
 #include <chrono>
 
-#include "kernel_launch.h"
 #include "visualization.h"
 #include "BisenetTensorRT.h"
 #include "PointPainting.h"
-#include <pointcloud_common.h>
-
-cv::Mat global_image;
-void mouseHandler(int event,int x,int y, int flags,void* param)
-{
-    if (event == cv::EVENT_LBUTTONDOWN)
-        std::cout << x << ", " << y << "  =  " << (int)global_image.at<uchar>(y,x) << std::endl;
-}
 
 int main(int argc, char** argv)
 {
@@ -23,12 +14,12 @@ int main(int argc, char** argv)
     if (argc > 1)
         enginePath = argv[1];
 
-    auto painter = PointPainter();
     auto bisenet = BiseNetTensorRT(enginePath);
+    auto painter = PointPainter();
     auto visualizer = Visualizer();
 
-    std::string rootPath = "/home/amrelsersy/PointPainting/tensorrt_inference/data/";
-    std::string savePointcloudsPath = "/home/amrelsersy/PointPainting/tensorrt_inference/data/results_pointclouds/";
+    std::string rootPath = "../data/";
+    std::string savePointcloudsPath = "../data/results_pointclouds/";
     std::string rootImagesPath = rootPath + "image_2";
     std::string rootPointcloudsPath = rootPath + "velodyne";
 
@@ -37,19 +28,12 @@ int main(int argc, char** argv)
     std::vector<std::string> pointcloudsPaths;
     
     for (const auto & entry : std::filesystem::directory_iterator(rootImagesPath))
-    {
-        std::string imagePath = entry.path().string();
-        imagesPaths.push_back(imagePath);
-    }
+        imagesPaths.push_back(entry.path().string());
     for (const auto & entry : std::filesystem::directory_iterator(rootPointcloudsPath))
-    {
-        std::string pointcloudPath = entry.path().string();
-        pointcloudsPaths.push_back(pointcloudPath);
-    }
+        pointcloudsPaths.push_back(entry.path().string());
 
     std::sort(imagesPaths.begin(), imagesPaths.end());
     std::sort(pointcloudsPaths.begin(), pointcloudsPaths.end());
-    // std::sort(semanticsPaths.begin(), semanticsPaths.end());
 
     // loop over samples
     for (int i = 0; i < imagesPaths.size(); i++)
@@ -80,20 +64,16 @@ int main(int argc, char** argv)
 
         savePointCloud(pointcloud, savePointcloudsPath + to_string(i) + ".bin");
 
-        std::cout << semantic.size() << std::endl;
         // visualization
-
         cv::Mat coloredSemantic;
         visualizer.ConvertToSemanticMap(semantic, coloredSemantic);
-
-        // cv::imshow("image", image);
         cv::imshow("coloredSemantic", coloredSemantic);
 
-        // global_image = cv::Mat(semantic);
-        // cv::setMouseCallback("coloredSemantic", mouseHandler, &coloredSemantic);
+        // cv::imshow("image", image);
         // just for visualization ,add 20 to brightness the image, as ids is [0-19] which is really dark
         // semantic.convertTo(semantic,CV_8UC1, 1, 20);
         // cv::imshow("semantic", semantic);
+
         if (cv::waitKey(0) == 27)
         {
             cv::destroyAllWindows();

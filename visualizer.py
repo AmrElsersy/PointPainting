@@ -163,13 +163,11 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default="data/KITTI/kitti/velodyne")
+    parser.add_argument('--mode', type=str, default='2d', help='mode of visualization can be 2d or 3d')
     args = parser.parse_args()
 
-    visualizer = Visualizer(mode='2d')
-    # visualizer = Visualizer(mode='3d')
+    visualizer = Visualizer(mode=args.mode)
 
-    # path = args.path 
     path = 'tensorrt_inference/data/results_pointclouds'
     paths = sorted(os.listdir(path))
     pointclouds_paths = [os.path.join(path, pointcloud_path) for pointcloud_path in paths]
@@ -185,9 +183,10 @@ if __name__ == "__main__":
         # semantic_df.hist(bins=100)
         print(semantic_df.value_counts())
 
-        cv2.imshow("bev", bev)
-        plt.show()
-        if cv2.waitKey(0) == 27:
-            exit()
-
-        # visualizer.visuallize_pointcloud(pointcloud, True)
+        if args.mode == '2d':
+            cv2.imshow("bev", bev)
+            plt.show()
+            if cv2.waitKey(0) == 27:
+                exit()
+        else:
+            visualizer.visuallize_pointcloud(pointcloud, True)

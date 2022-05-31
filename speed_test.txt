@@ -2,22 +2,23 @@
 Time of bisenetv2 = 64.72 ms
 Time of postprocesssing = 2.38 ms
 Time of total = 67 ms
-Time of pointpainting = 7.36 ms
-
+Time of pointpainting = 10 ms
+Total time = 77 ms
 
 # Python TensoRT & PyCuda
 Time of preprocessing = 6 ms
 Time of inference = 45 ms
 Time of postprocessing = 2 ms
-Time of total = 53 ms
+Time of python pointpainting 10 ms
+Time of total = 63 ms
 
 # C++ TensoRT & PyCuda
-Bisenetv2 = 44.3316 ms
-PointPainting = 2.97523 ms
-Total Inference = 47.3069 ms
+Bisenetv2(inference +pre/post processing) = 45.3316 ms
+PointPainting = 2.6 ms
+Total Inference = 48 ms
 
 Python PointPainting
-7 to 8 ms
+10 ms
 C++ Cuda PointPainting
-PointPainting = 3 ms
+PointPainting = 2.5 ms (4x faster)
 

@@ -1,23 +1,5 @@
-#include <bits/stdc++.h>
-#include <filesystem>
-#include <eigen3/Eigen/Eigen>
-using namespace std;
+#include "pointcloud_io.h"
 
-#ifndef POINTCLOUD_COMMON
-#define POINTCLOUD_COMMON
-
-#define X_IDX 0
-#define Y_IDX 1
-#define Z_IDX 2
-#define INTENSITY_IDX 3
-
-class Point{
-public:
-    float x;
-    float y;
-    float z;
-    float intensity;
-};
 void savePointCloud(vector<Point> &pointcloud, std::string savePath)
 {
     auto file = std::fstream(savePath, std::ios::out | std::ios::binary);
@@ -31,6 +13,7 @@ void savePointCloud(vector<Point> &pointcloud, std::string savePath)
     }
     file.close();
 }
+
 vector<Point> loadPointCloud(std::string path)
 {
     vector<Point> pointcloud;
@@ -86,5 +69,3 @@ void convertPointsToArray(const vector<Point> &pointcloud, float *pointcloud_dat
         pointcloud_data[i * 4 + 3] = point.intensity;
     }
 }
-
-#endif
