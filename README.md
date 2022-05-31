@@ -2,14 +2,14 @@
 [![Made withPytorch](https://img.shields.io/badge/Made%20with-pytorch-ee4c2c?style=for-the-badge&logo=pytorch)](https://www.pytorch.org/)
 # PointPainting-Semantic-Segmentation
 
-My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10150) for realtime pointcloud semantic segmentation painting (labeling each point with a class) based on semantic segmentation maps using [BiSeNetv2](https://arxiv.org/abs/1808.00897) 
+My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10150) for realtime pointcloud semantic segmentation painting (labeling each point with a class) based on semantic segmentation maps using [BiSeNetv2](https://arxiv.org/abs/1808.00897)
 
 ![pointpainting](images/point_painting.png)
 
 
 #### Project
 
-- BiSeNetv2 model trained on KITTI dataset 
+- BiSeNetv2 model trained on KITTI dataset
 - Implementation of the pointpainting fusion algorithm
 
 ### Demo Video
@@ -62,16 +62,16 @@ I used it and finetuned it on KITTI dataset using Pytorch
 ### Training on KITTI dataset
 ```python
 cd BiSeNetv2
-python3 train.py 
+python3 train.py
 ```
-I trained it on Colab and provided the [notebook](https://github.com/AmrElsersy/PointPainting/blob/master/BiSeNetv2/BiseNet_Train.ipynb) 
+I trained it on Colab and provided the [notebook](https://github.com/AmrElsersy/PointPainting/blob/master/BiSeNetv2/BiseNet_Train.ipynb)
 
 ![training](images/training.png)
 
 ### Test on KITTI Semantic
 ```python
 cd BiSeNetv2
-python3 test.py 
+python3 test.py
 ```
 
 ### KITTI Dataset
@@ -88,7 +88,7 @@ tensorboard --logdir PATH_TO_TENSORBOARD_FOLDER
 ![tensorboard](images/tensorboard.png)
 
 
-#### Folder structure    
+#### Folder structure
     ├── BiSeNetv2
 	    ├── checkpoints
     		├── BiseNetv2_150.pth 	# path to model
@@ -102,15 +102,15 @@ tensorboard --logdir PATH_TO_TENSORBOARD_FOLDER
                 ├── instance
                 ├── semantic
                 ├── semantic_rgb
-	    
+
         ├── utils
           ├── label.py 				# label information (colors/ids/names)
           ├── utils.py 				# utils functions
         ├── train.py
         ├── test.py
-        
+
     ├── Kitti_sample				# 2 images & pointclouds & calib for testing (by demo.py)
-    ├── KittiCalibration.py 		# Stores Calibration file matrices 
+    ├── KittiCalibration.py 		# Stores Calibration file matrices
     ├── KittiVideo.py 				# Kitti Video Reader
     ├── bev_utils.py 				# BEV algorithms
     ├── demo.py 					# demo to test on 1 sample (Kitti_sample)
@@ -133,4 +133,4 @@ tensorboard --logdir PATH_TO_TENSORBOARD_FOLDER
 
 - BiseNet (understanding spatial & context information) (good) https://prince-canuma.medium.com/spatial-path-context-path-3f03ed0c0cf5 .. https://medium.datadriveninvestor.com/bisenet-for-real-time-segmentation-part-i-bf8c04afc448
 
-- Receptive field https://blog.christianperone.com/2017/11/the-effective-receptive-field-on-cnns/	
+- Receptive field https://blog.christianperone.com/2017/11/the-effective-receptive-field-on-cnns/
