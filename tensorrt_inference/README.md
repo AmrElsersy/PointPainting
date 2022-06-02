@@ -68,7 +68,7 @@ python3 visualizer.py --mode=3d
 ### Fusion Algorithm
 - The PointPainting Fusion Algorithm takes [**`2.5 ms`**] on CUDA in C++ while the numpy version takes [**`10 ms`**] which is **`4x faster !`**
 
-# Python TensorRT
+# Python TensorRT & PyCUDA
 Also there is a `Python interface` for `TensorRT & PyCUDA` whcih is fast but not faster than the C++ interface.
 
 Check it at
