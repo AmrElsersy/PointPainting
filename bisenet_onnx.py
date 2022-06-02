@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_path', type=str, default='Kitti_sample/image_2/000038.png')
     parser.add_argument('--weights_path', type=str, default='BiSeNetv2/checkpoints/BiseNetv2_150.pth')
-    parser.add_argument('--onnx_path', type=str, default='bisenet.onnx')
+    parser.add_argument('--onnx_path', type=str, default='tensorrt_inference/bisenet.onnx')
     parser.add_argument('--ort', action='store_true')
     args = parser.parse_args()
 

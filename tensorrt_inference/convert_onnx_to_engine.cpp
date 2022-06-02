@@ -17,8 +17,8 @@ class Logger : public nvinfer1::ILogger
 
 int main(int argc, char** argv)
 {
-    std::string onnxPath = "/home/amrelsersy/PointPainting/bisenet.onnx";
-    std::string enginePath = "/home/amrelsersy/PointPainting/";
+    std::string onnxPath = "../bisenet.onnx";
+    std::string enginePath = "../";
 
     if (argc > 2)
     {

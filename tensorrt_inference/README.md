@@ -34,7 +34,7 @@ The code reads a sequence of test data located in 'tensorrt_inference/data' whic
 
 You will see output like this
 
-![pointpainting](../images/)
+![pointpainting](../images/semantic_and_image_1.png)
 
 ### Visualize the output of point painting
 Due to the lack of visualization tools in C++, I save the painted pointcloud(with semantic label channel) in the **data/results__pointclouds** path, and we can visualize the output of that by running the visualizer in the main project
@@ -47,12 +47,17 @@ python3 visualizer.py
 ```
 You will se output like that
 
+![tensorrt_painted_cloud](../images/semantic_and_bev1.png)
+
 Press any key to get the next saved result pointcloud
 
 To visualize the output in 3D run
 ```bash
 python3 visualizer.py --mode=3d
 ```
+
+![tensorrt_painted_cloud_3d](../images/tensorrt_3d.png)
+
 
 # Performance
 ### Bisenetv2 Semantic Segmentation

@@ -10,7 +10,7 @@
 
 int main(int argc, char** argv)
 {
-    std::string enginePath = "/home/amrelsersy/PointPainting/bisenet_tensorrt.trt";
+    std::string enginePath = "../bisenet_tensorrt.trt";
     if (argc > 1)
         enginePath = argv[1];
 
