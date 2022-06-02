@@ -1,6 +1,6 @@
 # TensorRT & CUDA for Point Painting
 
-Optimized Inference for both Bisenetv2 for semantic segmentation using TensoRT & CUDA, and the PointPainting Fusion algorithm using CUDA in C++
+Optimized Inference for both Bisenetv2 for semantic segmentation using TensoRT & CUDA (`1.5x faster`), and the PointPainting Fusion algorithm using CUDA in C++ (`4x faster`)
 
 ![pointpainting](../images/point_painting.png)
 
@@ -15,7 +15,7 @@ cd build
 cmake ..
 make
 ```
-Then run the executable **convert_onnx_to_engine** with the path of the onnx file(which is located in the 'PointPainting/' folder), and another path to save the tensorrt engine at it
+Then run the executable **convert_onnx_to_engine** with the path of the onnx file(which is located in the 'PointPainting/tensorrt_inference' folder), and another path to save the tensorrt engine at it(recommended to be at `tensorrt_inference/` path)
 
 ```bash
 # replace PATH_TO_ONNX with onnx path which is '../'
@@ -23,6 +23,8 @@ Then run the executable **convert_onnx_to_engine** with the path of the onnx fil
 ./convert_onnx_to_engine PATH_TO_ONNX PATH_TO_TENSORRT
 # example:
 ./convert_onnx_to_engine ../ ../
+# or use the default paths(recommended)
+./convert_onnx_to_engine
 ```
 
 Then Run the main executable **pointpainting-tensorrt** located in the build directory (after you build using make)
@@ -61,10 +63,19 @@ python3 visualizer.py --mode=3d
 
 # Performance
 ### Bisenetv2 Semantic Segmentation
-- The optimized TensorRT version of Bisenet runs at [**22.5 FPS**] while the Pytorch version runs at [**14 FPS**] which is **1.5x Faster** than Pytorch version
+- The optimized TensorRT version of Bisenet runs at [**`22.5 FPS`**] while the Pytorch version runs at [**`14 FPS`**] which is **`1.5x Faster`** than Pytorch version
 
 ### Fusion Algorithm
-- The PointPainting Fusion Algorithm takes [**2.5 ms**] on CUDA in C++ while the numpy version takes [**10 ms**] which is **4x faster !**
+- The PointPainting Fusion Algorithm takes [**`2.5 ms`**] on CUDA in C++ while the numpy version takes [**`10 ms`**] which is **`4x faster !`**
+
+# Python TensorRT
+Also there is a `Python interface` for `TensorRT & PyCUDA` whcih is fast but not faster than the C++ interface.
+
+Check it at
+- Python ONNX Runtime inference for bisenet @ [bisenet_onnx.py](../bisenet_onnx.py)
+- Python TensorRT inference for bisenet @ [tensorrt_bisenet.py](../tensorrt_bisenet.py)
+
+To see the difference in performance between the Python and C++ interfaces check the speed test numbers in [speed_test](../speed_test.txt)
 
 # How TensorRT works
 ![tensorrt_works_how](../images/how_tensorrt_works.jpg)

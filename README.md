@@ -12,6 +12,11 @@ My Pytorch implementation of [PointPainting Paper](https://arxiv.org/abs/1911.10
 - BiSeNetv2 model trained on KITTI dataset
 - Implementation of the pointpainting fusion algorithm
 
+## Update
+- Added Python ONNX Runtime inference for bisenet @ [bisenet_onnx.py](bisenet_onnx.py)
+- Added Python TensorRT inference for bisenet @ [tensorrt_bisenet.py](tensorrt_bisenet.py)
+- Added C++ TensorRT & CUDA inference @ [tensorrt_cpp](tensorrt_inference/)
+
 ### Demo Video
 ![Demo](images/video.gif)
 
