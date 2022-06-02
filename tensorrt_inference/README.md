@@ -4,6 +4,8 @@ Optimized Inference for both Bisenetv2 for semantic segmentation using TensoRT &
 
 ![pointpainting](../images/point_painting.png)
 
+![tensorrt](../images/tensorrt_performance.png)
+
 # Run the project
 First you need to get your GPU's tensorrt generated engine from the onnx format
 
