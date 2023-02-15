@@ -63,10 +63,10 @@ def main(args):
             elif args.mode == '2d':
                 scene_2D = visualizer.get_scene_2D(color_image, painted_pointcloud, calib)
                 frames.append(scene_2D)
-                # cv2.imshow('scene', scene_2D)
-            # if cv2.waitKey(0) == 27:
-            #     cv2.destroyAllWindows()
-            #     break
+                cv2.imshow('scene', scene_2D)
+            if cv2.waitKey(1) == 27:
+                cv2.destroyAllWindows()
+                break
         # if i == 20:
         #     break
 
