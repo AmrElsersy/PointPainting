@@ -1,9 +1,31 @@
-FROM nvidia/cuda:11.7.0-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:11.7.0-cudnn8-devel-ubuntu22.04
 WORKDIR /tmp
 
-#CU# CUDA
+# Enviroment
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,display
 ENV NVIDIA_VISIBLE_DEVICES=all
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+# Setup Sources for ROS
+RUN apt update && apt install -y curl gnupg2 lsb-release
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+RUN apt update
+RUN apt upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop
+
+# Setting up the ROS Workspace
+WORKDIR /root/dev_ws/src
+RUN apt-get install python3-rosdep -y
+RUN rosdep init
+RUN rosdep update
+RUN rosdep install -i --from-path src --rosdistro foxy -y
+RUN apt install python3-colcon-common-extensions -y
+
+COPY ros2_entrypoint.sh /tmp/.
+ENTRYPOINT ["/tmp/ros2_entrypoint.sh"]
+CMD ["bash"]
 
 # Run dpkg without interactive dialog
 ARG DEBIAN_FRONTEND=noninteractive
