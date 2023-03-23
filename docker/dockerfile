@@ -18,8 +18,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop
 # Setting up the ROS Workspace
 WORKDIR /tmp/dev_ws/src
 RUN apt-get install python3-rosdep -y
-RUN rosdep init
-RUN rosdep update
 RUN apt install python3-colcon-common-extensions -y
 
 COPY ros2_entrypoint.sh /tmp/dev_ws/.
@@ -86,15 +84,3 @@ ENV SHELL /bin/bash
 
 #Updating
 RUN apt-get update
-
-# Setting up the ROS Workspace
-WORKDIR /tmp/dev_ws/src
-RUN apt-get install python3-rosdep -y
-RUN rosdep init
-RUN rosdep update
-RUN apt install python3-colcon-common-extensions -y
-
-COPY ros2_entrypoint.sh /tmp/dev_ws/.
-RUN chmod +x /tmp/dev_ws/ros2_entrypoint.sh
-ENTRYPOINT ["/tmp/dev_ws/ros2_entrypoint.sh"]
-CMD ["bash"]
