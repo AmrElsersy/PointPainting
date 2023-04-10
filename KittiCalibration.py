@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import json
 
 class KittiCalibration:
     """
@@ -8,13 +9,15 @@ class KittiCalibration:
         image = Projection * Camera3D_after_rectification
         image = Projection * R_Rectification * Camera3D_reference
     """
-    def __init__(self, calib_path, from_video=False):
+    def __init__(self, calib_path, from_video=False, from_json=False):
         self.calib_path = calib_path
         self.calib_matrix = {}
         if from_video:
             self.calib_matrix = self.parse_calib_from_video(calib_path)
             self.calib_path = os.path.join(calib_path, "modified_calib_file.txt")
             print('#################', self.calib_path)
+        elif from_json:
+            self.calib_matrix = self.parse_calib_from_json(calib_path)
         else:
             self.calib_matrix = self.parse_calib_files(calib_path)
 
@@ -73,4 +76,25 @@ class KittiCalibration:
         Tr_velo_to_cam[0:3, 0:3] = np.reshape(velo2cam["R"], [3, 3])
         Tr_velo_to_cam[:, 3] = velo2cam["T"]
         mat_["Tr_velo_to_cam"] = Tr_velo_to_cam
+        return mat_
+    
+    def parse_calib_from_json(self, json_path):
+        with open(json_path, 'r') as json_file:
+            json_data = json.load(json_file)
+
+        mat_ = {}
+
+        # Extract projection matrix 
+        extrinsic_data = json_data['']
+        projection_matrix = np.array(extrinsic_data, dtype=np.float32)
+
+        mat_['P2'] = projection_matrix[:3, :]
+
+        # Extract Tr_velo_to_cam from Json data
+        extrinsic_data = json_data['top_center_lidar-to-center_camera-extrinsic']['param']['sensor_calib']['data']
+        Tr_velo_to_cam = np.array(extrinsic_data, dtype=np.float32)
+
+        # Set Tr_velo_to_cam as a 3x4 matrix
+        mat_["Tr_velo_to_cam"] = Tr_velo_to_cam[:3, :]
+
         return mat_
