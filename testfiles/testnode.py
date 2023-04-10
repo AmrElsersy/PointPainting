@@ -37,8 +37,8 @@ class PaintLidarNode(Node):
 
         self.visualizer = Visualizer('2d')
 
-        self.create_subscription(Image, '/camera/image_raw', self.image_callback, 1)
-        self.create_subscription(PointCloud2, '/lidar/pointcloud', self.pointcloud_callback, 1)
+        self.create_subscription(Image, '/lucid_vision/camera_front/image_raw/compressed', self.image_callback, 1)
+        self.create_subscription(PointCloud2, '/rslidar_points', self.pointcloud_callback, 1)
 
         self.calib = KittiCalibration('Kitti_sample/calib/000038.txt')
 
