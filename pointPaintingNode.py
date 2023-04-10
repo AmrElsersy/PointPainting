@@ -98,6 +98,12 @@ class PaintLidarNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
+    # if calib file is in kitti video format
+    # calib = KittiCalibration(args.calib_path, from_video=True)
+    # if calib file is in normal kitti format
+    calib = KittiCalibration(args.calib_path, from_json=True)
+    # TO DO !!: ADD PATH here
+
     paint_lidar_node = PaintLidarNode()
 
     rclpy.spin(paint_lidar_node)
