@@ -39,9 +39,8 @@ class PaintLidarNode(Node):
         self.calib = None
 
         # Subscribe
-        self.image_subscription = self.create_subscription(Image, 'image_topic', self.image_callback, 10)
-        self.lidar_subscription = self.create_subscription(PointCloud2, 'lidar_topic', self.lidar_callback, 10)
-        self.config_subscription = self.create_subscription(String, 'config_topic', self.config_callback, 10)
+        self.image_subscription = self.create_subscription(Image, '/lucid_vision/camera_front/image_raw/compressed', self.image_callback, 10)
+        self.lidar_subscription = self.create_subscription(PointCloud2, '/rslidar_points', self.lidar_callback, 10)
 
         # Publish
         self.painted_lidar_publisher = self.create_publisher(PointCloud2, 'painted_lidar_topic', 10)

@@ -90,6 +90,9 @@ class KittiCalibration:
 
         mat_['P2'] = projection_matrix[:3, :]
 
+        # Missing values for rectified
+        mat_['R0_rect'] = np.ones((3, 4))
+
         # Extract Tr_velo_to_cam from Json data
         extrinsic_data = json_data['top_center_lidar-to-center_camera-extrinsic']['param']['sensor_calib']['data']
         Tr_velo_to_cam = np.array(extrinsic_data, dtype=np.float32)
