@@ -10,6 +10,10 @@ sudo docker build -t pointpaintingvideo_ros .
 sudo rocker --nvidia --x11 --env NVIDIA_DRIVER_CAPABILITIES=all --volume ~/Documents/thesis/PointPaintingVideo:/tmp/PointPainting -- pointpaintingvideo
 ```
 
+```
+sudo rocker --nvidia --x11 --env NVIDIA_DRIVER_CAPABILITIES=all --volume /mnt/f/git/PointPaintingVideo:/tmp/PointPainting --pointpaintingvideo_ros
+```
+
 python3 demo_video.py --video_path KITTI/1 --calib_path KITTI/1/calib --mode 2d
 python3 demo_video.py --video_path KITTI/2 --calib_path KITTI/2/calib --mode 2d
 python3 demo_video.py --video_path KITTI/3 --calib_path KITTI/3/calib --mode 2d
