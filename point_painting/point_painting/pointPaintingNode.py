@@ -4,7 +4,7 @@ import time
 import torch
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, PointCloud2
+from sensor_msgs.msg import Image, PointCloud2, CameraInfo
 from std_msgs.msg import String
 from std_msgs.msg import Header
 from point_painting.KittiCalibration import KittiCalibration
@@ -38,7 +38,8 @@ class PaintLidarNode(Node):
         # Subscribe
         self.image_subscription = self.create_subscription(Image, 'image_topic', self.image_callback, 10)
         self.lidar_subscription = self.create_subscription(PointCloud2, 'lidar_topic', self.lidar_callback, 10)
-        self.config_subscription = self.create_subscription(String, 'config_topic', self.config_callback, 10)
+        self.camera_info_subscription = self.create_subscription(CameraInfo, 'camera_info_topic', self.camera_info_callback, 10)
+
 
         # Publish
         self.painted_lidar_publisher = self.create_publisher(PointCloud2, 'painted_lidar_topic', 10)
@@ -51,9 +52,13 @@ class PaintLidarNode(Node):
         self.pointcloud = np.frombuffer(msg.data, dtype=np.float32).reshape(-1, 4)
         self.process_data()
 
-    def config_callback(self, msg):
-        self.calib = KittiCalibration(msg.data)
+    def camera_info_callback(self, msg):
+        self.P2 = np.array(msg.P).reshape(3, 4)
+        self.R0_rect = np.array(msg.R).reshape(3, 3)
+        calib_path = 'src/point_painting/point_painting/lidar_camera_front_extrinsic.json'
+        calib = KittiCalibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
+
 
     def process_data(self):
 
@@ -98,8 +103,6 @@ def main(args=None):
     # if calib file is in kitti video format
     # calib = KittiCalibration(args.calib_path, from_video=True)
     # if calib file is in normal kitti format
-    calib_path = "src/point_painting/point_painting/lidar_camera_front_extrinsic.json"
-    calib = KittiCalibration(calib_path, from_json=True)
     # TO DO !!: ADD PATH here
 
     paint_lidar_node = PaintLidarNode()
