@@ -8,7 +8,7 @@ from sensor_msgs.msg import Image, PointCloud2, CameraInfo
 from std_msgs.msg import String
 from std_msgs.msg import Header
 from point_painting.KittiCalibration import KittiCalibration
-from point_painting import BiseNetv2
+from point_painting.BiseNetv2 import BiSeNetV2
 from point_painting.utils import preprocessing_kitti, postprocessing
 from point_painting.pointpainting import PointPainter
 
@@ -21,7 +21,7 @@ class PaintLidarNode(Node):
         super().__init__('paint_lidar_node')
 
         # Segmantic Segmentation
-        self.bisenetv2 = BiseNetv2()
+        self.bisenetv2 = BiSeNetV2()
         self.checkpoint = torch.load('BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
         self.bisenetv2.load_state_dict(self.checkpoint['bisenetv2'], strict=False)
         self.bisenetv2.eval()
