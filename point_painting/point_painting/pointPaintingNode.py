@@ -22,7 +22,7 @@ class PaintLidarNode(Node):
 
         # Segmantic Segmentation
         self.bisenetv2 = BiSeNetV2()
-        self.checkpoint = torch.load('BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
+        self.checkpoint = torch.load('src/point_painting/point_painting/BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
         self.bisenetv2.load_state_dict(self.checkpoint['bisenetv2'], strict=False)
         self.bisenetv2.eval()
         self.bisenetv2.to(device)
