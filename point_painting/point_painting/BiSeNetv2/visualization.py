@@ -10,9 +10,9 @@ import torch
 from torch.utils.data import  DataLoader
 import numpy as np 
 import cv2
-from dataset import KittiSemanticDataset
-from utils.label import id2label, trainId2label
-from utils.utils import tensor_to_cv2
+from point_painting.BiSeNetv2.dataset import KittiSemanticDataset
+from point_painting.BiSeNetv2.utils.label import id2label, trainId2label
+from point_painting.BiSeNetv2.utils.utils import tensor_to_cv2
 import torch.utils.tensorboard as tensorboard
 
 class KittiVisualizer:

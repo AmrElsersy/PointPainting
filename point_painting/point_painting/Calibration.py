@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import json
 
-class KittiCalibration:
+class Calibration:
     """
         Perform different types of calibration between camera & LIDAR
         image = Projection * Camera3D_after_rectification

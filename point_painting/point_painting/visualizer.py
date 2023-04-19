@@ -5,9 +5,9 @@ import numpy as np
 
 sys.path.insert(0, 'BiSeNetv2')
 
-from BiSeNetv2.visualization import KittiVisualizer
-from bev_utils import pointcloud_to_bev
-from BiSeNetv2.utils.label import trainId2label
+from point_painting.BiSeNetv2.visualization import KittiVisualizer
+from point_painting.bev_utils import pointcloud_to_bev
+from point_painting.BiSeNetv2.utils.label import trainId2label
 
 import open3d as o3d
 
@@ -34,13 +34,10 @@ def rotz(t):
         [0, 0, 1]])
 
 class Visualizer():
-    def __init__(self, mode='3d'):
+    def __init__(self):
         self.__semantic_visualizer = KittiVisualizer()
         self.scene_2D_width = 750
         self.user_press =None
-
-        if mode != '3d':
-            return
             
         self.__visualizer = o3d.visualization.Visualizer()
         self.__visualizer.create_window(width = 1280, height=720)
