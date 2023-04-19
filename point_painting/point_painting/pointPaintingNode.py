@@ -58,25 +58,18 @@ class PaintLidarNode(Node):
         print('Created Publisher')
 
     def image_callback(self, msg):
-        print('Compressed Image received')
         np_arr = np.frombuffer(msg.data, np.uint8)
-        image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        height, width, _ = image.shape
-        print('Image decompressed : height =', height, 'width =', width)
-        print(image.shape)
-        self.image = image
+        self.image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         self.process_data()
 
     def lidar_callback(self, msg):
-        print('Lidar received')
         self.pointcloud = np.frombuffer(msg.data, dtype=np.float32).reshape(-1, 4)
         self.process_data()
 
     def camera_info_callback(self, msg):
-        print('Info received')
         self.P2 = np.array(msg.p).reshape(3, 4)
         self.R0_rect = np.array(msg.r).reshape(3, 3)
-        calib_path = '/tmp/dev_ws/src/point_painting/point_painting/lidar_camera_front_extrinsic.json'
+        calib_path = '/tmp/dev_ws/src/point_painting/point_painting/top_center_lidar-to-center_camera-extrinsic.json'
         self.calib = Calibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
 
