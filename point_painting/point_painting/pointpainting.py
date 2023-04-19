@@ -5,14 +5,14 @@
 import cv2
 import time
 import numpy as np
-from point_painting import KittiCalibration
+from point_painting import Calibration
 from point_painting.bev_utils import clip_pointcloud
 
 class PointPainter():
     def __init__(self):
         self.image_shape = (1242, 375)
 
-    def paint(self, pointcloud, semantic, calib:KittiCalibration):
+    def paint(self, pointcloud, semantic, calib:Calibration):
         """
             Point Painting Fusion Algorithm
             Specify a class for each point in the pointcloud

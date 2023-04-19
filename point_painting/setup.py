@@ -8,7 +8,7 @@ setup(
     packages=[package_name], 
     py_modules=[
         'point_painting.pointPaintingNode',
-        'point_painting.KittiCalibration',
+        'point_painting.Calibration',
         'point_painting.BiSeNetv2.model.BiseNetv2',
         'point_painting.utils',
         'point_painting.bev_utils',

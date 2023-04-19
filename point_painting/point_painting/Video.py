@@ -1,16 +1,16 @@
 import os
 import cv2
 import numpy as np
-from KittiCalibration import KittiCalibration
+from Calibration import Calibration
 
-class KittiVideo:
+class Video:
     """ Load data for KITTI videos """
 
     def __init__(self, video_root, calib_root):
         self.video_root = video_root
         self.calib_root = calib_root
 
-        self.calib = KittiCalibration(calib_path=calib_root, from_video=True)
+        self.calib = Calibration(calib_path=calib_root, from_video=True)
         self.images_dir = os.path.join(self.video_root, 'image_02/data')
         self.lidar_dir = os.path.join(self.video_root, 'velodyne_points/data')
 

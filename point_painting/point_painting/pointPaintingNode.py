@@ -10,7 +10,7 @@ from sensor_msgs.msg import Image, PointCloud2, CameraInfo, CompressedImage, Poi
 from std_msgs.msg import String
 from std_msgs.msg import Header
 
-from point_painting.KittiCalibration import KittiCalibration
+from point_painting.Calibration import Calibration
 from point_painting.BiSeNetv2.model.BiseNetv2 import BiSeNetV2
 from point_painting.utils import preprocessing_kitti, postprocessing
 from point_painting.pointpainting import PointPainter
@@ -77,7 +77,7 @@ class PaintLidarNode(Node):
         self.P2 = np.array(msg.p).reshape(3, 4)
         self.R0_rect = np.array(msg.r).reshape(3, 3)
         calib_path = '/tmp/dev_ws/src/point_painting/point_painting/lidar_camera_front_extrinsic.json'
-        self.calib = KittiCalibration(calib_path, self.P2, self.R0_rect, from_json=True)
+        self.calib = Calibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
 
 
@@ -135,7 +135,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # if calib file is in kitti video format
-    # calib = KittiCalibration(args.calib_path, from_video=True)
+    # calib = Calibration(args.calib_path, from_video=True)
     # if calib file is in normal kitti format
     # TO DO !!: ADD PATH here
 
