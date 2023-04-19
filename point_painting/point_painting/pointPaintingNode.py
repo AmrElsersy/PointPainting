@@ -109,6 +109,7 @@ class PaintLidarNode(Node):
 
         # Publish Painted Lidar
         self.painted_lidar_publisher.publish(painted_lidar_msg)
+        t5 = time.time()
 
         # Add Visualizer
         color_image = self.visualizer.get_colored_image(self.image, semantic)
@@ -116,11 +117,14 @@ class PaintLidarNode(Node):
         scene_2D = cv2.resize(scene_2D, (600, 900))
         cv2.imshow("scene", scene_2D)
         cv2.waitKey(1)
+        t6 = time.time()
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
         print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
-        print(f'Time of Total = {1000 * (t4-t1)} ms')
+        print(f'Time of publishing = {1000 * (t5-t4)} ms')
+        print(f'Time of pointpainting = {1000 * (t6-t5)} ms')
+        print(f'Time of Total = {1000 * (t6-t1)} ms')
 
 def main(args=None):
     rclpy.init(args=args)

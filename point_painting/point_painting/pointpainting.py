@@ -5,7 +5,7 @@
 import cv2
 import time
 import numpy as np
-from point_painting import Calibration
+from point_painting.Calibration import Calibration
 from point_painting.bev_utils import clip_pointcloud
 
 class PointPainter():
@@ -23,7 +23,7 @@ class PointPainter():
             Return:
                 semantic/painted pointcloud of shape [n_points, 4] .. additional channel indicates class
         """
-        pointcloud = clip_pointcloud(pointcloud)
+        # pointcloud = clip_pointcloud(pointcloud)
         t1 = time.time()
         semantic = cv2.resize(semantic, self.image_shape, interpolation=cv2.INTER_NEAREST)
 
