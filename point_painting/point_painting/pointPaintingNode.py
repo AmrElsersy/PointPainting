@@ -3,8 +3,9 @@ import numpy as np
 import time
 import torch
 import rclpy
+import cv2
 from rclpy.node import Node
-from sensor_msgs.msg import Image, PointCloud2, CameraInfo
+from sensor_msgs.msg import Image, PointCloud2, CameraInfo, CompressedImage, PointField
 from std_msgs.msg import String
 from std_msgs.msg import Header
 from point_painting.KittiCalibration import KittiCalibration
@@ -21,14 +22,19 @@ class PaintLidarNode(Node):
         super().__init__('paint_lidar_node')
 
         # Segmantic Segmentation
+        print('Loading BisenetV2 Model')
         self.bisenetv2 = BiSeNetV2()
-        self.checkpoint = torch.load('src/point_painting/point_painting/BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
+        self.checkpoint = torch.load('/tmp/dev_ws/src/point_painting/point_painting/BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
         self.bisenetv2.load_state_dict(self.checkpoint['bisenetv2'], strict=False)
+        print('Loaded BisenetV2 Model')
         self.bisenetv2.eval()
         self.bisenetv2.to(device)
+        print('Evaled BisenetV2 Model')
 
+        print('Starting Fusion')
         # Fusion
         self.painter = PointPainter()
+        print('Completed Fusion')
 
         # Variables to store the incoming data
         self.image = None
@@ -36,46 +42,62 @@ class PaintLidarNode(Node):
         self.calib = None
 
         # Subscribe
-        self.image_subscription = self.create_subscription(Image, 'image_topic', self.image_callback, 10)
-        self.lidar_subscription = self.create_subscription(PointCloud2, 'lidar_topic', self.lidar_callback, 10)
-        self.camera_info_subscription = self.create_subscription(CameraInfo, 'camera_info_topic', self.camera_info_callback, 10)
-
+        self.image_subscription = self.create_subscription(CompressedImage, '/lucid_vision/camera_front/image_raw/compressed', self.image_callback, 10)
+        self.lidar_subscription = self.create_subscription(PointCloud2, '/rslidar_points', self.lidar_callback, 10)
+        self.camera_info_subscription = self.create_subscription(CameraInfo, '/lucid_vision/camera_front/camera_info', self.camera_info_callback, 10)
+        print('Created Subscriber')
 
         # Publish
-        self.painted_lidar_publisher = self.create_publisher(PointCloud2, 'painted_lidar_topic', 10)
+        self.painted_lidar_publisher = self.create_publisher(PointCloud2, '/painted_rslidar_points', 10)
+        print('Created Publisher')
 
     def image_callback(self, msg):
-        self.image = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
+        print('Compressed Image received')
+        np_arr = np.frombuffer(msg.data, np.uint8)
+        image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        height, width, _ = image.shape
+        print('Image decompressed : height =', height, 'width =', width)
+        print(image.shape)
+        self.image = image
         self.process_data()
 
     def lidar_callback(self, msg):
+        print('Lidar received')
         self.pointcloud = np.frombuffer(msg.data, dtype=np.float32).reshape(-1, 4)
         self.process_data()
 
     def camera_info_callback(self, msg):
-        self.P2 = np.array(msg.P).reshape(3, 4)
-        self.R0_rect = np.array(msg.R).reshape(3, 3)
-        calib_path = 'src/point_painting/point_painting/lidar_camera_front_extrinsic.json'
-        calib = KittiCalibration(calib_path, self.P2, self.R0_rect, from_json=True)
+        print('Info received')
+        self.P2 = np.array(msg.p).reshape(3, 4)
+        self.R0_rect = np.array(msg.r).reshape(3, 3)
+        calib_path = '/tmp/dev_ws/src/point_painting/point_painting/lidar_camera_front_extrinsic.json'
+        self.calib = KittiCalibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
 
 
     def process_data(self):
 
+        if self.image is None or self.pointcloud is None or self.calib is None:
+            return
+
         t1 = time.time()
         input_image = preprocessing_kitti(self.image)
+        print('Preprocessing done')
         semantic = self.bisenetv2(input_image)
+        print('Created Semantic Image')
         t2 = time.time()
         semantic = postprocessing(semantic)
+        print('Post Processing done')
         t3 = time.time()
         painted_pointcloud = self.painter.paint(self.pointcloud, semantic, self.calib)
         t4 = time.time()
+        print('Painting done')
         
         # Publish the painted_pointcloud as a PointCloud2 message
         painted_lidar_msg = PointCloud2()
         # Set the header and data fields of the painted_lidar_msg
         painted_lidar_msg.header.stamp = self.get_clock().now().to_msg()
-        painted_lidar_msg.header.frame_id = 'painted_lidar'
+        painted_lidar_msg.header.frame_id = 'rslidar'
         painted_lidar_msg.height = 1
         painted_lidar_msg.width = painted_pointcloud.shape[0]
         painted_lidar_msg.fields = [
