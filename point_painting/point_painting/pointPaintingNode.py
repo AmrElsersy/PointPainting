@@ -46,6 +46,7 @@ class PaintLidarNode(Node):
         self.image = None
         self.pointcloud = None
         self.calib = None
+        self.first_time = True
 
         # Subscribe
         self.image_subscription = self.create_subscription(CompressedImage, '/lucid_vision/camera_front/image_raw/compressed', self.image_callback, 10)
@@ -69,6 +70,12 @@ class PaintLidarNode(Node):
     def camera_info_callback(self, msg):
         self.P2 = np.array(msg.p).reshape(3, 4)
         self.R0_rect = np.array(msg.r).reshape(3, 3)
+        print('R_rect.shapes')
+        print(self.R0_rect.shape)
+        print(self.R0_rect)
+        print('P2.shape')
+        print(self.P2.shape)
+        print(self.P2)
         calib_path = '/tmp/dev_ws/src/point_painting/point_painting/top_center_lidar-to-center_camera-extrinsic.json'
         self.calib = Calibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
@@ -76,8 +83,10 @@ class PaintLidarNode(Node):
 
     def process_data(self):
 
-        if self.image is None or self.pointcloud is None or self.calib is None:
+        if self.image is None or self.pointcloud is None or self.calib is None or self.first_time is 'False':
             return
+
+        self.first_time = False
 
         t1 = time.time()
         input_image = preprocessing_kitti(self.image)
@@ -85,7 +94,7 @@ class PaintLidarNode(Node):
         t2 = time.time()
         semantic = postprocessing(semantic)
         t3 = time.time()
-        painted_pointcloud = self.painter.paint(self.pointcloud, semantic, self.calib)
+        painted_pointcloud = self.painter.paint(self.pointcloud[:, :3], semantic, self.calib)
         t4 = time.time()
         
         # Publish the painted_pointcloud as a PointCloud2 message
@@ -104,7 +113,7 @@ class PaintLidarNode(Node):
         painted_lidar_msg.is_bigendian = False
         painted_lidar_msg.point_step = 16
         painted_lidar_msg.row_step = painted_lidar_msg.point_step * painted_lidar_msg.width
-        painted_lidar_msg.is_dense = True
+        painted_lidar_msg.is_dense = False
         data = painted_pointcloud.astype(np.float32).tobytes()
         painted_lidar_msg.data.frombytes(data)
 
@@ -114,11 +123,11 @@ class PaintLidarNode(Node):
         t5 = time.time()
 
         # Add Visualizer
-        #color_image = self.visualizer.get_colored_image(self.image, semantic)
-        # = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
-        #scene_2D = cv2.resize(scene_2D, (600, 900))
-        #cv2.imshow("scene", scene_2D)
-        #cv2.waitKey(1)
+        color_image = self.visualizer.get_colored_image(self.image, semantic)
+        scene_2D  = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
+        scene_2D = cv2.resize(scene_2D, (600, 900))
+        cv2.imshow("scene", scene_2D)
+        cv2.waitKey(1)
         t6 = time.time()
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
