@@ -58,25 +58,18 @@ class PaintLidarNode(Node):
         print('Created Publisher')
 
     def image_callback(self, msg):
-        print('Compressed Image received')
         np_arr = np.frombuffer(msg.data, np.uint8)
-        image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        height, width, _ = image.shape
-        print('Image decompressed : height =', height, 'width =', width)
-        print(image.shape)
-        self.image = image
+        self.image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         self.process_data()
 
     def lidar_callback(self, msg):
-        print('Lidar received')
         self.pointcloud = np.frombuffer(msg.data, dtype=np.float32).reshape(-1, 4)
         self.process_data()
 
     def camera_info_callback(self, msg):
-        print('Info received')
         self.P2 = np.array(msg.p).reshape(3, 4)
         self.R0_rect = np.array(msg.r).reshape(3, 3)
-        calib_path = '/tmp/dev_ws/src/point_painting/point_painting/lidar_camera_front_extrinsic.json'
+        calib_path = '/tmp/dev_ws/src/point_painting/point_painting/top_center_lidar-to-center_camera-extrinsic.json'
         self.calib = Calibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
 
@@ -116,6 +109,7 @@ class PaintLidarNode(Node):
 
         # Publish Painted Lidar
         self.painted_lidar_publisher.publish(painted_lidar_msg)
+        t5 = time.time()
 
         # Add Visualizer
         color_image = self.visualizer.get_colored_image(self.image, semantic)
@@ -123,11 +117,14 @@ class PaintLidarNode(Node):
         scene_2D = cv2.resize(scene_2D, (600, 900))
         cv2.imshow("scene", scene_2D)
         cv2.waitKey(1)
+        t6 = time.time()
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
         print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
-        print(f'Time of Total = {1000 * (t4-t1)} ms')
+        print(f'Time of publishing = {1000 * (t5-t4)} ms')
+        print(f'Time of pointpainting = {1000 * (t6-t5)} ms')
+        print(f'Time of Total = {1000 * (t6-t1)} ms')
 
 def main(args=None):
     rclpy.init(args=args)
