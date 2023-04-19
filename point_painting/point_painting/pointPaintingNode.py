@@ -34,8 +34,8 @@ class PaintLidarNode(Node):
         self.bisenetv2.to(device)
         print('Evaled BisenetV2 Model')
 
-        print('Starting Fusion')
         # Fusion
+        print('Starting Fusion')
         self.painter = PointPainter()
         print('Completed Fusion')
 
@@ -88,16 +88,12 @@ class PaintLidarNode(Node):
 
         t1 = time.time()
         input_image = preprocessing_kitti(self.image)
-        print('Preprocessing done')
         semantic = self.bisenetv2(input_image)
-        print('Created Semantic Image')
         t2 = time.time()
         semantic = postprocessing(semantic)
-        print('Post Processing done')
         t3 = time.time()
         painted_pointcloud = self.painter.paint(self.pointcloud, semantic, self.calib)
         t4 = time.time()
-        print('Painting done')
         
         # Publish the painted_pointcloud as a PointCloud2 message
         painted_lidar_msg = PointCloud2()
@@ -118,13 +114,15 @@ class PaintLidarNode(Node):
         painted_lidar_msg.is_dense = True
         painted_lidar_msg.data = painted_pointcloud.astype(np.float32).tobytes()
 
+        # Publish Painted Lidar
         self.painted_lidar_publisher.publish(painted_lidar_msg)
 
+        # Add Visualizer
         color_image = self.visualizer.get_colored_image(self.image, semantic)
         scene_2D = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
         scene_2D = cv2.resize(scene_2D, (600, 900))
         cv2.imshow("scene", scene_2D)
-        cv2.waitKey(0.1)
+        cv2.waitKey(1)
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
