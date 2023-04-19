@@ -105,25 +105,27 @@ class PaintLidarNode(Node):
         painted_lidar_msg.point_step = 16
         painted_lidar_msg.row_step = painted_lidar_msg.point_step * painted_lidar_msg.width
         painted_lidar_msg.is_dense = True
-        painted_lidar_msg.data = painted_pointcloud.astype(np.float32).tobytes()
+        data = painted_pointcloud.astype(np.float32).tobytes()
+        painted_lidar_msg.data.frombytes(data)
+
 
         # Publish Painted Lidar
         self.painted_lidar_publisher.publish(painted_lidar_msg)
         t5 = time.time()
 
         # Add Visualizer
-        color_image = self.visualizer.get_colored_image(self.image, semantic)
-        scene_2D = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
-        scene_2D = cv2.resize(scene_2D, (600, 900))
-        cv2.imshow("scene", scene_2D)
-        cv2.waitKey(1)
+        #color_image = self.visualizer.get_colored_image(self.image, semantic)
+        # = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
+        #scene_2D = cv2.resize(scene_2D, (600, 900))
+        #cv2.imshow("scene", scene_2D)
+        #cv2.waitKey(1)
         t6 = time.time()
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
         print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
         print(f'Time of publishing = {1000 * (t5-t4)} ms')
-        print(f'Time of pointpainting = {1000 * (t6-t5)} ms')
+        print(f'Time of Visualizing = {1000 * (t6-t5)} ms')
         print(f'Time of Total = {1000 * (t6-t1)} ms')
 
 def main(args=None):
