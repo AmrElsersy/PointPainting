@@ -13,8 +13,8 @@ import torchvision.transforms.transforms as transforms
 import torchvision
 import numpy as np 
 import cv2
-from utils.label import labels, id2label
-from utils.utils import TransformationTrain
+from point_painting.BiSeNetv2.utils.label import labels, id2label
+from point_painting.BiSeNetv2.utils.utils import TransformationTrain
 
 class KittiSemanticDataset(Dataset):
     def __init__(self, root = 'data/KITTI', split = 'train', mode = 'semantic', transform = None, transform_train=None):

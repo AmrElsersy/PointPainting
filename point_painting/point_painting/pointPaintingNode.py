@@ -4,14 +4,17 @@ import time
 import torch
 import rclpy
 import cv2
+
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo, CompressedImage, PointField
 from std_msgs.msg import String
 from std_msgs.msg import Header
+
 from point_painting.KittiCalibration import KittiCalibration
-from point_painting.BiseNetv2 import BiSeNetV2
+from point_painting.BiSeNetv2.model.BiseNetv2 import BiSeNetV2
 from point_painting.utils import preprocessing_kitti, postprocessing
 from point_painting.pointpainting import PointPainter
+from point_painting.visualizer import Visualizer
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device(dev)
@@ -35,6 +38,9 @@ class PaintLidarNode(Node):
         # Fusion
         self.painter = PointPainter()
         print('Completed Fusion')
+
+        # Visualizer
+        self.visualizer = Visualizer()
 
         # Variables to store the incoming data
         self.image = None
@@ -113,6 +119,12 @@ class PaintLidarNode(Node):
         painted_lidar_msg.data = painted_pointcloud.astype(np.float32).tobytes()
 
         self.painted_lidar_publisher.publish(painted_lidar_msg)
+
+        color_image = self.visualizer.get_colored_image(self.image, semantic)
+        scene_2D = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
+        scene_2D = cv2.resize(scene_2D, (600, 900))
+        cv2.imshow("scene", scene_2D)
+        cv2.waitKey(0.1)
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')

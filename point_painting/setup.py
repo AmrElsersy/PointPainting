@@ -9,10 +9,17 @@ setup(
     py_modules=[
         'point_painting.pointPaintingNode',
         'point_painting.KittiCalibration',
-        'point_painting.BiseNetv2',
+        'point_painting.BiSeNetv2.model.BiseNetv2',
         'point_painting.utils',
         'point_painting.bev_utils',
         'point_painting.pointpainting',
+        'point_painting.visualizer',
+        'point_painting.BiSeNetv2.visualization',
+        'point_painting.bev_utils',
+        'point_painting.BiSeNetv2.utils.label',
+        'point_painting.BiSeNetv2.dataset',
+        'point_painting.BiSeNetv2.utils.label',
+        'point_painting.BiSeNetv2.utils.utils'
     ], 
     data_files=[
         ('share/ament_index/resource_index/packages',
