@@ -38,7 +38,7 @@ class Visualizer():
         self.__semantic_visualizer = KittiVisualizer()
         self.scene_2D_width = 750
         self.user_press =None
-            
+        
         self.__visualizer = o3d.visualization.Visualizer()
         self.__visualizer.create_window(width = 1280, height=720)
         self.__pcd = o3d.geometry.PointCloud()

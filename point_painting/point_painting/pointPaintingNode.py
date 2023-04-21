@@ -65,6 +65,20 @@ class PaintLidarNode(Node):
 
     def lidar_callback(self, msg):
         self.pointcloud = np.frombuffer(msg.data, dtype=np.float32).reshape(-1, 4)
+
+        # Extract the XYZ coordinates
+        coordinates = self.pointcloud[:, :3]
+
+        # Define the 90-degree rotation matrix around the Z-axis
+        rotation_matrix = np.array([[np.cos(np.pi/2), -np.sin(np.pi/2), 0],
+                                    [np.sin(np.pi/2),  np.cos(np.pi/2), 0],
+                                    [0,                0,               1]])
+
+        # Rotate the coordinates
+        rotated_coordinates = np.dot(coordinates, rotation_matrix.T)
+
+        # Replace the original coordinates with the rotated coordinates
+        self.pointcloud[:, :3] = rotated_coordinates
         self.process_data()
 
     def camera_info_callback(self, msg):
@@ -94,7 +108,9 @@ class PaintLidarNode(Node):
         t2 = time.time()
         semantic = postprocessing(semantic)
         t3 = time.time()
-        painted_pointcloud = self.painter.paint(self.pointcloud[:, :3], semantic, self.calib)
+
+        
+        painted_pointcloud = self.painter.paint(self.pointcloud, semantic, self.calib)
         t4 = time.time()
         
         # Publish the painted_pointcloud as a PointCloud2 message
@@ -123,6 +139,7 @@ class PaintLidarNode(Node):
         t5 = time.time()
 
         # Add Visualizer
+        # self.visualizer.visuallize_pointcloud(painted_pointcloud, blocking=True)
         color_image = self.visualizer.get_colored_image(self.image, semantic)
         scene_2D  = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
         scene_2D = cv2.resize(scene_2D, (600, 900))
