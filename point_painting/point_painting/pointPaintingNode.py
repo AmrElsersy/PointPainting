@@ -25,7 +25,7 @@ class PaintLidarNode(Node):
         super().__init__('paint_lidar_node')
 
         # Segmantic Segmentation
-        print('Loading BisenetV2 Model')
+        print('Loading BisenetV2 Segmentation Model')
         self.bisenetv2 = BiSeNetV2()
         self.checkpoint = torch.load('/tmp/dev_ws/src/point_painting/point_painting/BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
         self.bisenetv2.load_state_dict(self.checkpoint['bisenetv2'], strict=False)
@@ -35,10 +35,8 @@ class PaintLidarNode(Node):
         print('Evaled BisenetV2 Model')
 
         # Fusion
-        print('Starting Fusion')
         self.painter = PointPainter()
-        print('Completed Fusion')
-
+        
         # Visualizer
         self.visualizer = Visualizer()
 
@@ -46,6 +44,7 @@ class PaintLidarNode(Node):
         self.image = None
         self.pointcloud = None
         self.calib = None
+        self.first_time = True
 
         # Subscribe
         self.image_subscription = self.create_subscription(CompressedImage, '/lucid_vision/camera_front/image_raw/compressed', self.image_callback, 10)
@@ -64,6 +63,20 @@ class PaintLidarNode(Node):
 
     def lidar_callback(self, msg):
         self.pointcloud = np.frombuffer(msg.data, dtype=np.float32).reshape(-1, 4)
+
+        # Extract the XYZ coordinates
+        coordinates = self.pointcloud[:, :3]
+
+        # Define the 90-degree rotation matrix around the Z-axis
+        rotation_matrix = np.array([[np.cos(np.pi/2), -np.sin(np.pi/2), 0],
+                                    [np.sin(np.pi/2),  np.cos(np.pi/2), 0],
+                                    [0,                0,               1]])
+
+        # Rotate the coordinates
+        rotated_coordinates = np.dot(coordinates, rotation_matrix.T)
+
+        # Replace the original coordinates with the rotated coordinates
+        self.pointcloud[:, :3] = rotated_coordinates
         self.process_data()
 
     def camera_info_callback(self, msg):
@@ -76,8 +89,10 @@ class PaintLidarNode(Node):
 
     def process_data(self):
 
-        if self.image is None or self.pointcloud is None or self.calib is None:
+        if self.image is None or self.pointcloud is None or self.calib is None or self.first_time is 'False':
             return
+
+        self.first_time = False
 
         t1 = time.time()
         input_image = preprocessing_kitti(self.image)
@@ -104,7 +119,7 @@ class PaintLidarNode(Node):
         painted_lidar_msg.is_bigendian = False
         painted_lidar_msg.point_step = 16
         painted_lidar_msg.row_step = painted_lidar_msg.point_step * painted_lidar_msg.width
-        painted_lidar_msg.is_dense = True
+        painted_lidar_msg.is_dense = False
         data = painted_pointcloud.astype(np.float32).tobytes()
         painted_lidar_msg.data.frombytes(data)
 
@@ -114,27 +129,23 @@ class PaintLidarNode(Node):
         t5 = time.time()
 
         # Add Visualizer
-        #color_image = self.visualizer.get_colored_image(self.image, semantic)
-        # = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
-        #scene_2D = cv2.resize(scene_2D, (600, 900))
-        #cv2.imshow("scene", scene_2D)
-        #cv2.waitKey(1)
-        t6 = time.time()
+        # self.visualizer.visuallize_pointcloud(painted_pointcloud, blocking=True)
+        # color_image = self.visualizer.get_colored_image(self.image, semantic)
+        # scene_2D  = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
+        # scene_2D = cv2.resize(scene_2D, (600, 900))
+        # cv2.imshow("scene", scene_2D)
+        # cv2.waitKey(1)
+        # t6 = time.time()
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
         print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
         print(f'Time of publishing = {1000 * (t5-t4)} ms')
-        print(f'Time of Visualizing = {1000 * (t6-t5)} ms')
-        print(f'Time of Total = {1000 * (t6-t1)} ms')
+        # print(f'Time of Visualizing = {1000 * (t6-t5)} ms')
+        print(f'Time of Total = {1000 * (t5-t1)} ms')
 
 def main(args=None):
     rclpy.init(args=args)
-
-    # if calib file is in kitti video format
-    # calib = Calibration(args.calib_path, from_video=True)
-    # if calib file is in normal kitti format
-    # TO DO !!: ADD PATH here
 
     paint_lidar_node = PaintLidarNode()
 

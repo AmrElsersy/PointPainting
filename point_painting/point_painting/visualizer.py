@@ -38,7 +38,7 @@ class Visualizer():
         self.__semantic_visualizer = KittiVisualizer()
         self.scene_2D_width = 750
         self.user_press =None
-            
+        
         self.__visualizer = o3d.visualization.Visualizer()
         self.__visualizer.create_window(width = 1280, height=720)
         self.__pcd = o3d.geometry.PointCloud()
@@ -173,12 +173,10 @@ if __name__ == "__main__":
         pointcloud = np.fromfile(pointcloud_path, dtype=np.float32).reshape((-1, 4))
         bev = visualizer.visualize_painted_pointcloud(pointcloud=pointcloud)
 
-        print("pointcloud.shape ", pointcloud.shape)
         semantic_channel = pointcloud[:,3]
         semantic_channel = semantic_channel[semantic_channel != 255]
         semantic_df = pd.DataFrame(semantic_channel)
         # semantic_df.hist(bins=100)
-        print(semantic_df.value_counts())
 
         if args.mode == '2d':
             cv2.imshow("bev", bev)

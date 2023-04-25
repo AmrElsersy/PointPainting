@@ -10,7 +10,7 @@ from point_painting.bev_utils import clip_pointcloud
 
 class PointPainter():
     def __init__(self):
-        self.image_shape = (1242, 375)
+        self.image_shape = (2880, 1860)
 
     def paint(self, pointcloud, semantic, calib:Calibration):
         """
@@ -23,7 +23,8 @@ class PointPainter():
             Return:
                 semantic/painted pointcloud of shape [n_points, 4] .. additional channel indicates class
         """
-        # pointcloud = clip_pointcloud(pointcloud)
+
+        pointcloud = clip_pointcloud(pointcloud)
         t1 = time.time()
         semantic = cv2.resize(semantic, self.image_shape, interpolation=cv2.INTER_NEAREST)
 
@@ -44,7 +45,6 @@ class PointPainter():
         R_rect[3,3] = 1
         # Projection matrix from (3,4) to (4,4)
         P2 = np.vstack((calib.P2, np.array([0,0,0,1])))
-        # print(velo_to_cam.shape, R_rect.shape, P2.shape)
 
         # 2D image point = Projection @ Rectification @ Extrinsic @ 3D Velodyne
         projected_points = P2 @ R_rect @ velo_to_cam @ pointcloud.T # (4,N) == (4,4) @ (4,N) 
