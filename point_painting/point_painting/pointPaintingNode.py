@@ -25,7 +25,7 @@ class PaintLidarNode(Node):
         super().__init__('paint_lidar_node')
 
         # Segmantic Segmentation
-        print('Loading BisenetV2 Model')
+        print('Loading BisenetV2 Segmentation Model')
         self.bisenetv2 = BiSeNetV2()
         self.checkpoint = torch.load('/tmp/dev_ws/src/point_painting/point_painting/BiSeNetv2/checkpoints/BiseNetv2_150.pth', map_location=dev)
         self.bisenetv2.load_state_dict(self.checkpoint['bisenetv2'], strict=False)
@@ -35,10 +35,8 @@ class PaintLidarNode(Node):
         print('Evaled BisenetV2 Model')
 
         # Fusion
-        print('Starting Fusion')
         self.painter = PointPainter()
-        print('Completed Fusion')
-
+        
         # Visualizer
         self.visualizer = Visualizer()
 
@@ -84,12 +82,6 @@ class PaintLidarNode(Node):
     def camera_info_callback(self, msg):
         self.P2 = np.array(msg.p).reshape(3, 4)
         self.R0_rect = np.array(msg.r).reshape(3, 3)
-        print('R_rect.shapes')
-        print(self.R0_rect.shape)
-        print(self.R0_rect)
-        print('P2.shape')
-        print(self.P2.shape)
-        print(self.P2)
         calib_path = '/tmp/dev_ws/src/point_painting/point_painting/top_center_lidar-to-center_camera-extrinsic.json'
         self.calib = Calibration(calib_path, self.P2, self.R0_rect, from_json=True)
         self.process_data()
@@ -108,8 +100,6 @@ class PaintLidarNode(Node):
         t2 = time.time()
         semantic = postprocessing(semantic)
         t3 = time.time()
-
-        
         painted_pointcloud = self.painter.paint(self.pointcloud, semantic, self.calib)
         t4 = time.time()
         
@@ -140,27 +130,22 @@ class PaintLidarNode(Node):
 
         # Add Visualizer
         # self.visualizer.visuallize_pointcloud(painted_pointcloud, blocking=True)
-        color_image = self.visualizer.get_colored_image(self.image, semantic)
-        scene_2D  = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
-        scene_2D = cv2.resize(scene_2D, (600, 900))
-        cv2.imshow("scene", scene_2D)
-        cv2.waitKey(1)
-        t6 = time.time()
+        # color_image = self.visualizer.get_colored_image(self.image, semantic)
+        # scene_2D  = self.visualizer.get_scene_2D(color_image, painted_pointcloud, self.calib)
+        # scene_2D = cv2.resize(scene_2D, (600, 900))
+        # cv2.imshow("scene", scene_2D)
+        # cv2.waitKey(1)
+        # t6 = time.time()
 
         print(f'Time of bisenetv2 = {1000 * (t2-t1)} ms')
         print(f'Time of postprocesssing = {1000 * (t3-t2)} ms')
         print(f'Time of pointpainting = {1000 * (t4-t3)} ms')
         print(f'Time of publishing = {1000 * (t5-t4)} ms')
-        print(f'Time of Visualizing = {1000 * (t6-t5)} ms')
-        print(f'Time of Total = {1000 * (t6-t1)} ms')
+        # print(f'Time of Visualizing = {1000 * (t6-t5)} ms')
+        print(f'Time of Total = {1000 * (t5-t1)} ms')
 
 def main(args=None):
     rclpy.init(args=args)
-
-    # if calib file is in kitti video format
-    # calib = Calibration(args.calib_path, from_video=True)
-    # if calib file is in normal kitti format
-    # TO DO !!: ADD PATH here
 
     paint_lidar_node = PaintLidarNode()
 

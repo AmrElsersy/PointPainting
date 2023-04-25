@@ -78,8 +78,6 @@ class Calibration:
         return mat_
     
     def parse_calib_from_json(self, json_path):
-        current_dir = os.getcwd()
-        print("Current working directory:", current_dir)
 
         with open(json_path, 'r') as json_file:
             json_data = json.load(json_file)
