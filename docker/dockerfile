@@ -1,0 +1,88 @@
+FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
+WORKDIR /tmp
+
+# Enviroment
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,display
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+# Setup Sources for ROS
+RUN apt update && apt install -y curl gnupg2 lsb-release
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+RUN apt update
+RUN apt upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop
+
+# Setting up the ROS Workspace
+WORKDIR /tmp/dev_ws/src
+RUN apt-get install python3-rosdep -y
+RUN apt-get install python3-colcon-common-extensions -y
+RUN apt-get install ros-humble-image-transport-plugins -y
+
+# COPY ros2_entrypoint.sh /tmp/dev_ws/.
+# RUN chmod +x /tmp/dev_ws/ros2_entrypoint.sh
+# ENTRYPOINT ["/tmp/dev_ws/ros2_entrypoint.sh"]
+# CMD ["bash"]
+
+# Run dpkg without interactive dialog
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libbz2-dev \
+    libdb-dev \
+    libreadline-dev \
+    libffi-dev \
+    libgdbm-dev \
+    liblzma-dev \
+    libncursesw5-dev \
+    libpq-dev \
+    libsqlite3-dev \
+    libssl-dev \
+    libxcb-keysyms1 \
+    libxcb-randr0 \
+    libxcb-xinerama0 \ 
+    libxkbcommon-x11-0 \
+    libgl1 \
+    libxcb-xkb1 \ 
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-render-util0 \
+    libdbus-1-3 \
+    zlib1g-dev \
+    tk-dev \
+    openssl \
+    uuid-dev \
+    wget \
+    xz-utils \
+    zlib1g-dev
+
+# Generic python installations
+RUN apt-get update && apt-get install -y \
+python3-pip
+
+# Install missing system librarys
+RUN apt-get update && apt-get install -y \
+libgl1-mesa-glx libboost-all-dev
+
+# Install pip packages
+RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+
+RUN pip install \
+open3d \
+opencv-python-headless \
+tqdm \
+tensorboard \
+mmcv-full==1.7.0 -f https://download.openmmlab.com/mmcv/dist/cu117/torch1.13.0/index.html 
+
+# Setting Home ENV for CUDA
+ENV CUDA_HOME "/usr/local/cuda-11.7"
+
+# Setting the default shell
+ENV SHELL /bin/bash
+
+#Updating
+RUN apt-get update
